@@ -21,4 +21,10 @@ public class TestController {
     public ResponseEntity<ApiResponse<Object>> protectedEndpoint(){
         return ResponseEntity.ok(ApiResponse.success("Protected endpoint OK", null));
     }
+
+    @GetMapping("/client-only")
+    @PreAuthorize("hasRole('CLIENT')")
+    public ResponseEntity<ApiResponse<Object>> clientOnlyEndpoint(){
+        return ResponseEntity.ok(ApiResponse.success("¡Hola! Endpoint exclusivo para clientes", "CLIENT_ACCESS"));
+    }
 }

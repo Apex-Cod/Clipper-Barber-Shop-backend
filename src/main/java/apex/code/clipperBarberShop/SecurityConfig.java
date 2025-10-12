@@ -43,9 +43,11 @@ public class SecurityConfig {
                         "/api/auth/**",
                         "/api/registro/empresa",
                         "/api/registro/cliente",
+                        "/api/test/public",
                         "/actuator/**"
                 ).permitAll()
                 .requestMatchers("/api/registro/empleado").hasRole("OWNER")
+                .requestMatchers("/api/test/client-only").hasRole("CLIENT")
                 .anyRequest().authenticated()
             );
 
