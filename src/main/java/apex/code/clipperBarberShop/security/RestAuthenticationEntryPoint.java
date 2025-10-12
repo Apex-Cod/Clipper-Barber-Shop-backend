@@ -21,7 +21,18 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        ApiResponse<Object> body = ApiResponse.error("No autenticado", null);
+        
+        String message = "No autenticado";
+        String uri = request.getRequestURI();
+        
+        // Mensaje más específico basado en el tipo de error
+        if (authException.getMessage().contains("JWT")) {
+            message = "Token JWT inválido o expirado";
+        } else if (uri.contains("/api/")) {
+            message = "Se requiere autenticación para acceder a este recurso";
+        }
+        
+        ApiResponse<Object> body = ApiResponse.error(message, null);
         response.getWriter().write(mapper.writeValueAsString(body));
     }
 }
