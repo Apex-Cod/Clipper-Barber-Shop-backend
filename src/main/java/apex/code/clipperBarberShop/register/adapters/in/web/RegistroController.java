@@ -7,6 +7,7 @@ import apex.code.clipperBarberShop.register.application.service.RegistroService;
 import apex.code.clipperBarberShop.shared.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 
@@ -24,8 +25,10 @@ public class RegistroController {
     }
 
     @PostMapping("/empleado")
+    @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<ApiResponse<Object>> registrarEmpleado(@RequestBody EmpleadoRequest request, Principal principal){
         // principal name contains the authenticated user id (we configured UserDetails to use user id as username)
+        // Only users with OWNER role can register employees
         registroService.registrarEmpleadoByAdmin(request, principal.getName());
         return ResponseEntity.ok(ApiResponse.success("Empleado registrado", null));
     }

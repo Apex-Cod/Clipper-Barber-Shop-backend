@@ -45,7 +45,7 @@ public class SecurityConfig {
                         "/api/registro/cliente",
                         "/actuator/**"
                 ).permitAll()
-                .requestMatchers("/api/registro/empleado").authenticated()
+                .requestMatchers("/api/registro/empleado").hasRole("OWNER")
                 .anyRequest().authenticated()
             );
 
