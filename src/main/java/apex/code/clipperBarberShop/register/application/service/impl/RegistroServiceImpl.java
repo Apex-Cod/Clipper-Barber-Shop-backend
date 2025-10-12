@@ -1,0 +1,117 @@
+package apex.code.clipperBarberShop.register.application.service.impl;
+
+import apex.code.clipperBarberShop.Entities.Empresa;
+import apex.code.clipperBarberShop.Entities.Usuario;
+import apex.code.clipperBarberShop.register.application.dto.ClienteRequest;
+import apex.code.clipperBarberShop.register.application.dto.EmpleadoRequest;
+import apex.code.clipperBarberShop.register.application.dto.RegistroRequest;
+import apex.code.clipperBarberShop.register.application.service.RegistroService;
+import apex.code.clipperBarberShop.register.domain.port.out.EmpresaRepositoryPort;
+import apex.code.clipperBarberShop.register.domain.port.out.UsuarioRepositoryPort;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class RegistroServiceImpl implements RegistroService {
+
+    private final EmpresaRepositoryPort empresaRepository;
+    private final UsuarioRepositoryPort usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    @Override
+    @Transactional
+    public void registrarEmpresaConAdmin(RegistroRequest request) {
+        Empresa empresa = Empresa.builder()
+                .nombre(request.getEmpresaNombre())
+                .email(request.getEmpresaEmail())
+                .build();
+
+        empresa = empresaRepository.save(empresa);
+
+    Usuario admin = Usuario.builder()
+                .id(UUID.randomUUID().toString())
+                .empresa(empresa)
+                .name(request.getAdminName())
+                .lastName(request.getAdminLastName())
+                .email(request.getAdminEmail())
+        .password(passwordEncoder.encode(request.getAdminPassword()))
+                .role("OWNER")
+                .build();
+
+        usuarioRepository.save(admin);
+    }
+
+    @Override
+    @Transactional
+    public void registrarEmpleado(EmpleadoRequest request) {
+        Long empresaId = null;
+        try{
+            empresaId = Long.parseLong(request.getEmpresaId());
+        }catch(Exception e){
+            throw new IllegalArgumentException("empresaId inválido");
+        }
+
+        Empresa empresa = empresaRepository.findById(empresaId)
+                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
+
+    Usuario empleado = Usuario.builder()
+                .id(UUID.randomUUID().toString())
+                .empresa(empresa)
+                .name(request.getName())
+                .lastName(request.getLastName())
+                .email(request.getEmail())
+        .password(passwordEncoder.encode(request.getPassword()))
+                .role("EMPLOYEE")
+                .build();
+
+        usuarioRepository.save(empleado);
+    }
+
+    @Override
+    @Transactional
+    public void registrarCliente(ClienteRequest request) {
+    Usuario cliente = Usuario.builder()
+                .id(UUID.randomUUID().toString())
+                .empresa(null)
+                .name(request.getName())
+                .lastName(request.getLastName())
+                .email(request.getEmail())
+        .password(passwordEncoder.encode(request.getPassword()))
+                .role("CLIENT")
+                .build();
+
+        usuarioRepository.save(cliente);
+    }
+
+    @Override
+    @Transactional
+    public void registrarEmpleadoByAdmin(EmpleadoRequest request, String adminUserId) {
+        // find admin user
+        Usuario admin = usuarioRepository.findById(adminUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Admin no encontrado"));
+
+        if(!"OWNER".equals(admin.getRole())){
+            throw new IllegalArgumentException("El usuario no tiene permisos para crear empleados");
+        }
+
+        Empresa empresa = admin.getEmpresa();
+        if(empresa == null) throw new IllegalArgumentException("Admin no asociado a ninguna empresa");
+
+        Usuario empleado = Usuario.builder()
+                .id(UUID.randomUUID().toString())
+                .empresa(empresa)
+                .name(request.getName())
+                .lastName(request.getLastName())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .role("EMPLOYEE")
+                .build();
+
+        usuarioRepository.save(empleado);
+    }
+}
