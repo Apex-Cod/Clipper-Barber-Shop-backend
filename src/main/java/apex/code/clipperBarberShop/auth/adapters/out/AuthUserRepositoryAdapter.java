@@ -2,7 +2,7 @@ package apex.code.clipperBarberShop.auth.adapters.out;
 
 import apex.code.clipperBarberShop.Entities.Usuario;
 import apex.code.clipperBarberShop.auth.domain.port.out.AuthUserRepositoryPort;
-import apex.code.clipperBarberShop.registro.domain.port.out.UsuarioRepositoryPort;
+import apex.code.clipperBarberShop.register.domain.port.out.UsuarioRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import java.util.Optional;
