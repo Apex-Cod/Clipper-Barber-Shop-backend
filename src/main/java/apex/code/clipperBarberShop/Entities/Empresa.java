@@ -35,6 +35,7 @@ public class Empresa {
     private String estado; // ACTIVA / INACTIVA
 
     @OneToMany(mappedBy = "empresa", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<Usuario> usuarios = new ArrayList<>();
 
     @PrePersist
