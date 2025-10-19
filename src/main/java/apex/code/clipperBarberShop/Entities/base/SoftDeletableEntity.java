@@ -23,7 +23,7 @@ public abstract class SoftDeletableEntity {
     /**
      * Indica si el registro ha sido eliminado lógicamente
      */
-    @Column(name = "deleted", nullable = false)
+    @Column(name = "deleted", nullable = false, columnDefinition = "boolean default false")
     private Boolean deleted = false;
     
     /**

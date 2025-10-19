@@ -41,7 +41,7 @@ public class Usuario extends SoftDeletableEntity {
     @Column(length = 20, nullable = false)
     private String role; // OWNER, ADMIN, CLIENT, EMPLOYEE
     
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "boolean default true")
     @Builder.Default
     private Boolean activo = true; // Indica si el usuario está activo (puede usar el sistema)
 
