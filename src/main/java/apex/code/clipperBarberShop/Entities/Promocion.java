@@ -1,7 +1,9 @@
 package apex.code.clipperBarberShop.Entities;
 
+import apex.code.clipperBarberShop.Entities.base.SoftDeletableEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
 
@@ -11,8 +13,8 @@ import java.time.LocalDate;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Promocion {
+@SuperBuilder
+public class Promocion extends SoftDeletableEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -35,5 +37,11 @@ public class Promocion {
     @JoinColumn(name = "servicio_id", nullable = false)
     private Servicio servicio;
 
+    @Deprecated // Usar el campo 'deleted' de SoftDeletableEntity
     private Boolean activa;
+    
+    @PrePersist
+    public void prePersist(){
+        if(this.getDeleted() == null) this.setDeleted(false);
+    }
 }

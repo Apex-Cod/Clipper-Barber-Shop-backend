@@ -1,7 +1,9 @@
 package apex.code.clipperBarberShop.Entities;
 
+import apex.code.clipperBarberShop.Entities.base.SoftDeletableEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
@@ -11,8 +13,8 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Resenia {
+@SuperBuilder
+public class Resenia extends SoftDeletableEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -44,5 +46,6 @@ public class Resenia {
     @PrePersist
     public void prePersist(){
         if(this.fecha == null) this.fecha = LocalDateTime.now();
+        if(this.getDeleted() == null) this.setDeleted(false);
     }
 }

@@ -1,15 +1,17 @@
-package apex.code.clipperBarberShop.register.application.dto;
+package apex.code.clipperBarberShop.user.application.dto;
 
-import apex.code.clipperBarberShop.shared.validation.ValidPassword;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
+/**
+ * DTO para actualizar información de un usuario
+ */
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ClienteRequest {
+public class ActualizarUsuarioRequest {
     
     @NotBlank(message = "El nombre es obligatorio")
     @Size(min = 2, max = 50, message = "El nombre debe tener entre 2 y 50 caracteres")
@@ -25,8 +27,4 @@ public class ClienteRequest {
     @Email(message = "El email debe ser válido")
     @Size(max = 100, message = "El email no puede exceder 100 caracteres")
     private String email;
-    
-    @NotBlank(message = "La contraseña es obligatoria")
-    @ValidPassword
-    private String password;
 }

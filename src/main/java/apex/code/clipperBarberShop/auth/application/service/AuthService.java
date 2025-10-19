@@ -26,6 +26,16 @@ public class AuthService implements AuthUseCase {
         Usuario user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
+        // Verificar que el usuario no esté eliminado
+        if (user.getDeleted()) {
+            throw new IllegalArgumentException("Usuario no encontrado o inactivo");
+        }
+        
+        // Verificar que el usuario esté activo
+        if (!user.getActivo()) {
+            throw new IllegalArgumentException("Usuario inactivo. Contacte al administrador");
+        }
+
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new IllegalArgumentException("Credenciales inválidas");
         }

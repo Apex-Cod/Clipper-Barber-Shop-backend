@@ -1,7 +1,9 @@
 package apex.code.clipperBarberShop.Entities;
 
+import apex.code.clipperBarberShop.Entities.base.SoftDeletableEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 
@@ -11,8 +13,8 @@ import java.math.BigDecimal;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Plan {
+@SuperBuilder
+public class Plan extends SoftDeletableEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -33,4 +35,9 @@ public class Plan {
 
     @Column(name = "max_reservas")
     private Integer maxReservas;
+    
+    @PrePersist
+    public void prePersist(){
+        if(this.getDeleted() == null) this.setDeleted(false);
+    }
 }
