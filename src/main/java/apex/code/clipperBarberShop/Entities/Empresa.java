@@ -1,7 +1,9 @@
 package apex.code.clipperBarberShop.Entities;
 
+import apex.code.clipperBarberShop.Entities.base.SoftDeletableEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -13,20 +15,21 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Empresa {
+@SuperBuilder
+public class Empresa extends SoftDeletableEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String nombre;
+    @Column(nullable = false, length = 100)
+    private String nombre; // Max 100 según validaciones
 
     private String direccion;
 
     private String telefono;
 
-    private String email;
+    @Column(length = 100)
+    private String email; // Max 100 según validaciones
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -42,5 +45,6 @@ public class Empresa {
     public void prePersist(){
         if(this.createdAt == null) this.createdAt = LocalDateTime.now();
         if(this.estado == null) this.estado = "ACTIVA";
+        if(this.getDeleted() == null) this.setDeleted(false);
     }
 }
