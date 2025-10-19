@@ -23,7 +23,7 @@ public class Usuario extends SoftDeletableEntity {
     @JoinColumn(name = "empresa_id")
     private Empresa empresa;
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(nullable = false, length = 100)
     private String email; // Max 100 según validaciones
 
     @Column(name = "last_name", nullable = false, length = 50)
