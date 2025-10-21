@@ -26,20 +26,32 @@ public class RegistroServiceImpl implements RegistroService {
     @Override
     @Transactional
     public void registrarEmpresaConAdmin(RegistroRequest request) {
+        // Sanitizar datos: eliminar espacios en blanco al inicio y final
+        String empresaNombre = request.getEmpresaNombre().trim();
+        String empresaEmail = request.getEmpresaEmail().trim().toLowerCase();
+        String adminName = request.getAdminName().trim();
+        String adminLastName = request.getAdminLastName().trim();
+        String adminEmail = request.getAdminEmail().trim().toLowerCase();
+        
+        // Verificar que el email no esté ya registrado
+        if (usuarioRepository.findByEmail(adminEmail).isPresent()) {
+            throw new IllegalArgumentException("El email ya está registrado");
+        }
+        
         Empresa empresa = Empresa.builder()
-                .nombre(request.getEmpresaNombre())
-                .email(request.getEmpresaEmail())
+                .nombre(empresaNombre)
+                .email(empresaEmail)
                 .build();
 
         empresa = empresaRepository.save(empresa);
 
-    Usuario admin = Usuario.builder()
+        Usuario admin = Usuario.builder()
                 .id(UUID.randomUUID().toString())
                 .empresa(empresa)
-                .name(request.getAdminName())
-                .lastName(request.getAdminLastName())
-                .email(request.getAdminEmail())
-        .password(passwordEncoder.encode(request.getAdminPassword()))
+                .name(adminName)
+                .lastName(adminLastName)
+                .email(adminEmail)
+                .password(passwordEncoder.encode(request.getAdminPassword()))
                 .role("OWNER")
                 .build();
 
@@ -49,9 +61,19 @@ public class RegistroServiceImpl implements RegistroService {
     @Override
     @Transactional
     public void registrarEmpleado(EmpleadoRequest request) {
+        // Sanitizar datos
+        String name = request.getName().trim();
+        String lastName = request.getLastName().trim();
+        String email = request.getEmail().trim().toLowerCase();
+        
+        // Verificar que el email no esté ya registrado
+        if (usuarioRepository.findByEmail(email).isPresent()) {
+            throw new IllegalArgumentException("El email ya está registrado");
+        }
+        
         Long empresaId = null;
         try{
-            empresaId = Long.parseLong(request.getEmpresaId());
+            empresaId = Long.parseLong(request.getEmpresaId().trim());
         }catch(Exception e){
             throw new IllegalArgumentException("empresaId inválido");
         }
@@ -59,13 +81,13 @@ public class RegistroServiceImpl implements RegistroService {
         Empresa empresa = empresaRepository.findById(empresaId)
                 .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
 
-    Usuario empleado = Usuario.builder()
+        Usuario empleado = Usuario.builder()
                 .id(UUID.randomUUID().toString())
                 .empresa(empresa)
-                .name(request.getName())
-                .lastName(request.getLastName())
-                .email(request.getEmail())
-        .password(passwordEncoder.encode(request.getPassword()))
+                .name(name)
+                .lastName(lastName)
+                .email(email)
+                .password(passwordEncoder.encode(request.getPassword()))
                 .role("EMPLOYEE")
                 .build();
 
@@ -75,13 +97,23 @@ public class RegistroServiceImpl implements RegistroService {
     @Override
     @Transactional
     public void registrarCliente(ClienteRequest request) {
-    Usuario cliente = Usuario.builder()
+        // Sanitizar datos
+        String name = request.getName().trim();
+        String lastName = request.getLastName().trim();
+        String email = request.getEmail().trim().toLowerCase();
+        
+        // Verificar que el email no esté ya registrado
+        if (usuarioRepository.findByEmail(email).isPresent()) {
+            throw new IllegalArgumentException("El email ya está registrado");
+        }
+        
+        Usuario cliente = Usuario.builder()
                 .id(UUID.randomUUID().toString())
                 .empresa(null)
-                .name(request.getName())
-                .lastName(request.getLastName())
-                .email(request.getEmail())
-        .password(passwordEncoder.encode(request.getPassword()))
+                .name(name)
+                .lastName(lastName)
+                .email(email)
+                .password(passwordEncoder.encode(request.getPassword()))
                 .role("CLIENT")
                 .build();
 
@@ -91,6 +123,16 @@ public class RegistroServiceImpl implements RegistroService {
     @Override
     @Transactional
     public void registrarEmpleadoByAdmin(EmpleadoRequest request, String adminUserId) {
+        // Sanitizar datos
+        String name = request.getName().trim();
+        String lastName = request.getLastName().trim();
+        String email = request.getEmail().trim().toLowerCase();
+        
+        // Verificar que el email no esté ya registrado
+        if (usuarioRepository.findByEmail(email).isPresent()) {
+            throw new IllegalArgumentException("El email ya está registrado");
+        }
+        
         // find admin user
         Usuario admin = usuarioRepository.findById(adminUserId)
                 .orElseThrow(() -> new IllegalArgumentException("Admin no encontrado"));
@@ -105,9 +147,9 @@ public class RegistroServiceImpl implements RegistroService {
         Usuario empleado = Usuario.builder()
                 .id(UUID.randomUUID().toString())
                 .empresa(empresa)
-                .name(request.getName())
-                .lastName(request.getLastName())
-                .email(request.getEmail())
+                .name(name)
+                .lastName(lastName)
+                .email(email)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role("EMPLOYEE")
                 .build();

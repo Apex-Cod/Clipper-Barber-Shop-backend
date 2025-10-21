@@ -55,7 +55,8 @@ CREATE TABLE pagos (
     estado VARCHAR(20) DEFAULT 'PENDIENTE' CHECK (estado IN ('PENDIENTE','COMPLETADO','FALLIDO')),
     FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE CASCADE,
     FOREIGN KEY (suscripcion_id) REFERENCES suscripciones(id)
-);
+);    @Column(nullable = false, length = 60)
+    private String password; // BCrypt hash always generates 60 characters
 
 -- --------------------------------------------------------
 -- Configuración de empresa

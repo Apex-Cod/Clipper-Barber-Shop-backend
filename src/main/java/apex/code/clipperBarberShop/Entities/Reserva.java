@@ -1,7 +1,9 @@
 package apex.code.clipperBarberShop.Entities;
 
+import apex.code.clipperBarberShop.Entities.base.SoftDeletableEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
@@ -11,8 +13,8 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Reserva {
+@SuperBuilder
+public class Reserva extends SoftDeletableEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -31,7 +33,7 @@ public class Reserva {
     private Integer duracionMinutos;
 
     @Column(length = 20)
-    private String status;
+    private String status; // PENDING, CONFIRMED, COMPLETED, CANCELLED
 
     @Column(name = "client_id", nullable = false)
     private String clientId;
@@ -54,5 +56,6 @@ public class Reserva {
     public void prePersist(){
         if(this.createdAt == null) this.createdAt = LocalDateTime.now();
         if(this.status == null) this.status = "PENDING";
+        if(this.getDeleted() == null) this.setDeleted(false);
     }
 }
