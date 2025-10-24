@@ -24,11 +24,15 @@ public class UserManagementController {
     
     /**
      * Obtener información de un usuario específico
+     * ADMIN: Puede ver cualquier usuario
+     * OWNER: Solo puede ver usuarios de su empresa
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
-    public ResponseEntity<ApiResponse<UsuarioResponse>> obtenerUsuario(@PathVariable String id) {
-        UsuarioResponse usuario = userManagementUseCase.obtenerUsuario(id);
+    public ResponseEntity<ApiResponse<UsuarioResponse>> obtenerUsuario(
+            @PathVariable String id,
+            Principal principal) {
+        UsuarioResponse usuario = userManagementUseCase.obtenerUsuario(id, principal.getName());
         return ResponseEntity.ok(ApiResponse.success("Usuario obtenido", usuario));
     }
     
@@ -37,26 +41,31 @@ public class UserManagementController {
      */
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<UsuarioResponse>> obtenerPerfil(Principal principal) {
-        UsuarioResponse usuario = userManagementUseCase.obtenerUsuario(principal.getName());
+        UsuarioResponse usuario = userManagementUseCase.obtenerUsuario(principal.getName(), principal.getName());
         return ResponseEntity.ok(ApiResponse.success("Perfil obtenido", usuario));
     }
     
     /**
      * Listar todos los usuarios de una empresa
+     * ADMIN: Puede listar usuarios de cualquier empresa
+     * OWNER: Solo puede listar usuarios de su propia empresa
      */
     @GetMapping("/empresa/{empresaId}")
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
     public ResponseEntity<ApiResponse<List<UsuarioResponse>>> listarUsuariosPorEmpresa(
-            @PathVariable Long empresaId) {
-        List<UsuarioResponse> usuarios = userManagementUseCase.listarUsuariosPorEmpresa(empresaId);
+            @PathVariable Long empresaId,
+            Principal principal) {
+        List<UsuarioResponse> usuarios = userManagementUseCase.listarUsuariosPorEmpresa(empresaId, principal.getName());
         return ResponseEntity.ok(ApiResponse.success("Usuarios obtenidos", usuarios));
     }
     
     /**
-     * Listar todos los usuarios del sistema (solo para OWNER)
+     * Listar todos los usuarios del sistema (solo para ADMIN)
+     * ADMIN: Acceso total a todos los usuarios
+     * OWNER: No tiene acceso a este endpoint
      */
     @GetMapping
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<UsuarioResponse>>> listarTodosLosUsuarios() {
         List<UsuarioResponse> usuarios = userManagementUseCase.listarTodosLosUsuarios();
         return ResponseEntity.ok(ApiResponse.success("Usuarios obtenidos", usuarios));
@@ -64,12 +73,15 @@ public class UserManagementController {
     
     /**
      * Listar usuarios eliminados (papelera)
+     * ADMIN: Puede ver eliminados de todas las empresas (si no se especifica empresaId)
+     * OWNER: Solo puede ver eliminados de su empresa
      */
     @GetMapping("/deleted")
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
     public ResponseEntity<ApiResponse<List<UsuarioResponse>>> listarUsuariosEliminados(
-            @RequestParam(required = false) Long empresaId) {
-        List<UsuarioResponse> usuarios = userManagementUseCase.listarUsuariosEliminados(empresaId);
+            @RequestParam(required = false) Long empresaId,
+            Principal principal) {
+        List<UsuarioResponse> usuarios = userManagementUseCase.listarUsuariosEliminados(empresaId, principal.getName());
         return ResponseEntity.ok(ApiResponse.success("Usuarios eliminados obtenidos", usuarios));
     }
     
@@ -185,11 +197,15 @@ public class UserManagementController {
     
     /**
      * Restaurar un usuario eliminado
+     * ADMIN: Puede restaurar cualquier usuario
+     * OWNER: Solo puede restaurar usuarios de su empresa
      */
     @PostMapping("/{id}/restore")
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
-    public ResponseEntity<ApiResponse<UsuarioResponse>> restaurarUsuario(@PathVariable String id) {
-        UsuarioResponse usuario = userManagementUseCase.restaurarUsuario(id);
+    public ResponseEntity<ApiResponse<UsuarioResponse>> restaurarUsuario(
+            @PathVariable String id,
+            Principal principal) {
+        UsuarioResponse usuario = userManagementUseCase.restaurarUsuario(id, principal.getName());
         return ResponseEntity.ok(ApiResponse.success("Usuario restaurado", usuario));
     }
 }
