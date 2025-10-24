@@ -72,6 +72,28 @@ public class Empresa extends SoftDeletableEntity {
     @Column(name = "horario_domingo", length = 50)
     private String horarioDomingo;
 
+    // Campos de imágenes (Supabase Storage)
+    @Column(name = "logo_url", length = 500)
+    private String logoUrl; // URL del logo de la empresa en Supabase
+
+    @Column(name = "logo_path", length = 255)
+    private String logoPath; // Path del archivo en Supabase Storage (ej: "empresas/123/logo.jpg")
+
+    @Column(name = "banner_url", length = 500)
+    private String bannerUrl; // URL del banner/portada de la empresa
+
+    @Column(name = "banner_path", length = 255)
+    private String bannerPath; // Path del banner en Supabase Storage
+
+    @Column(length = 1000)
+    private String descripcion; // Descripción de la empresa
+
+    @Column(name = "sitio_web", length = 255)
+    private String sitioWeb; // Sitio web de la empresa
+
+    @Column(name = "redes_sociales", length = 1000)
+    private String redesSociales; // JSON con redes sociales: {"facebook":"url","instagram":"url","twitter":"url"}
+
     @OneToMany(mappedBy = "empresa", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Usuario> usuarios = new ArrayList<>();
