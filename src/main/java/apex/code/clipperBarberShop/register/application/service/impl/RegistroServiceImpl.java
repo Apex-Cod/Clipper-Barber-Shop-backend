@@ -8,8 +8,12 @@ import apex.code.clipperBarberShop.register.application.dto.RegistroRequest;
 import apex.code.clipperBarberShop.register.application.service.RegistroService;
 import apex.code.clipperBarberShop.register.domain.port.out.EmpresaRepositoryPort;
 import apex.code.clipperBarberShop.register.domain.port.out.UsuarioRepositoryPort;
+import apex.code.clipperBarberShop.shared.email.EmailService;
+import apex.code.clipperBarberShop.shared.util.VerificationCodeGenerator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -17,11 +21,19 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RegistroServiceImpl implements RegistroService {
 
     private final EmpresaRepositoryPort empresaRepository;
     private final UsuarioRepositoryPort usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
+    
+    @Value("${app.verification.use-code:true}")
+    private boolean useVerificationCode;
+    
+    @Value("${app.verification.expiry-minutes:15}")
+    private int expiryMinutes;
 
     @Override
     @Transactional
@@ -45,6 +57,11 @@ public class RegistroServiceImpl implements RegistroService {
 
         empresa = empresaRepository.save(empresa);
 
+        // Generar token de verificación (código de 6 dígitos o UUID según configuración)
+        String verificationToken = useVerificationCode ? 
+            VerificationCodeGenerator.generateCode() : 
+            UUID.randomUUID().toString();
+        
         Usuario admin = Usuario.builder()
                 .id(UUID.randomUUID().toString())
                 .empresa(empresa)
@@ -53,9 +70,23 @@ public class RegistroServiceImpl implements RegistroService {
                 .email(adminEmail)
                 .password(passwordEncoder.encode(request.getAdminPassword()))
                 .role("OWNER")
+                .emailVerified(false)
+                .verificationToken(verificationToken)
+                .verificationTokenExpiry(java.time.LocalDateTime.now().plusMinutes(expiryMinutes))
+                .verificationAttempts(0)
+                .activo(false) // Inactivo hasta verificar email
                 .build();
 
         usuarioRepository.save(admin);
+        
+        // Enviar email de verificación
+        try {
+            emailService.sendVerificationEmail(adminEmail, adminName, verificationToken);
+            log.info("Email de verificación enviado a: {}", adminEmail);
+        } catch (Exception e) {
+            log.error("Error al enviar email de verificación", e);
+            // No lanzamos excepción para no bloquear el registro
+        }
     }
 
     @Override
@@ -81,6 +112,11 @@ public class RegistroServiceImpl implements RegistroService {
         Empresa empresa = empresaRepository.findById(empresaId)
                 .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
 
+        // Generar token de verificación (código de 6 dígitos o UUID según configuración)
+        String verificationToken = useVerificationCode ? 
+            VerificationCodeGenerator.generateCode() : 
+            UUID.randomUUID().toString();
+        
         Usuario empleado = Usuario.builder()
                 .id(UUID.randomUUID().toString())
                 .empresa(empresa)
@@ -89,9 +125,22 @@ public class RegistroServiceImpl implements RegistroService {
                 .email(email)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role("EMPLOYEE")
+                .emailVerified(false)
+                .verificationToken(verificationToken)
+                .verificationTokenExpiry(java.time.LocalDateTime.now().plusMinutes(expiryMinutes))
+                .verificationAttempts(0)
+                .activo(false) // Inactivo hasta verificar email
                 .build();
 
         usuarioRepository.save(empleado);
+        
+        // Enviar email de verificación
+        try {
+            emailService.sendVerificationEmail(email, name, verificationToken);
+            log.info("Email de verificación enviado a: {}", email);
+        } catch (Exception e) {
+            log.error("Error al enviar email de verificación", e);
+        }
     }
 
     @Override
@@ -107,6 +156,11 @@ public class RegistroServiceImpl implements RegistroService {
             throw new IllegalArgumentException("El email ya está registrado");
         }
         
+        // Generar token de verificación (código de 6 dígitos o UUID según configuración)
+        String verificationToken = useVerificationCode ? 
+            VerificationCodeGenerator.generateCode() : 
+            UUID.randomUUID().toString();
+        
         Usuario cliente = Usuario.builder()
                 .id(UUID.randomUUID().toString())
                 .empresa(null)
@@ -115,9 +169,22 @@ public class RegistroServiceImpl implements RegistroService {
                 .email(email)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role("CLIENT")
+                .emailVerified(false)
+                .verificationToken(verificationToken)
+                .verificationTokenExpiry(java.time.LocalDateTime.now().plusMinutes(expiryMinutes))
+                .verificationAttempts(0)
+                .activo(false) // Inactivo hasta verificar email
                 .build();
 
         usuarioRepository.save(cliente);
+        
+        // Enviar email de verificación
+        try {
+            emailService.sendVerificationEmail(email, name, verificationToken);
+            log.info("Email de verificación enviado a: {}", email);
+        } catch (Exception e) {
+            log.error("Error al enviar email de verificación", e);
+        }
     }
 
     @Override
@@ -144,6 +211,11 @@ public class RegistroServiceImpl implements RegistroService {
         Empresa empresa = admin.getEmpresa();
         if(empresa == null) throw new IllegalArgumentException("Admin no asociado a ninguna empresa");
 
+        // Generar token de verificación (código de 6 dígitos o UUID según configuración)
+        String verificationToken = useVerificationCode ? 
+            VerificationCodeGenerator.generateCode() : 
+            UUID.randomUUID().toString();
+        
         Usuario empleado = Usuario.builder()
                 .id(UUID.randomUUID().toString())
                 .empresa(empresa)
@@ -152,8 +224,21 @@ public class RegistroServiceImpl implements RegistroService {
                 .email(email)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role("EMPLOYEE")
+                .emailVerified(false)
+                .verificationToken(verificationToken)
+                .verificationTokenExpiry(java.time.LocalDateTime.now().plusMinutes(expiryMinutes))
+                .verificationAttempts(0)
+                .activo(false) // Inactivo hasta verificar email
                 .build();
 
         usuarioRepository.save(empleado);
+        
+        // Enviar email de verificación
+        try {
+            emailService.sendVerificationEmail(email, name, verificationToken);
+            log.info("Email de verificación enviado a: {}", email);
+        } catch (Exception e) {
+            log.error("Error al enviar email de verificación", e);
+        }
     }
 }
