@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,16 +40,15 @@ public class Empresa extends SoftDeletableEntity {
     private String estado; // ACTIVA / INACTIVA
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "publico_objetivo", length = 20, nullable = false)
+    @Column(name = "publico_objetivo", length = 20, nullable = true)
     @Builder.Default
     private PublicoObjetivo publicoObjetivo = PublicoObjetivo.UNISEX; // Público al que está dirigida la empresa
 
-    // Campos de geolocalización
-    @Column(precision = 10, scale = 8)
-    private Double latitud; // Latitud de la ubicación de la empresa
+    @Column
+    private Double latitud;
 
-    @Column(precision = 11, scale = 8)
-    private Double longitud; // Longitud de la ubicación de la empresa
+    @Column
+    private Double longitud;
 
     // Horarios de atención
     @Column(name = "horario_lunes", length = 50)

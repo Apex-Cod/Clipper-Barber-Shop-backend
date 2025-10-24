@@ -26,7 +26,17 @@
 
 ### 3. Configurar Políticas de Acceso (RLS - Row Level Security)
 
-#### Para permitir subida de archivos:
+⚠️ **IMPORTANTE**: Si usas el **service_role key** (recomendado para backend), las políticas RLS se **omiten automáticamente**. Solo necesitas configurarlas si usas el **anon key**.
+
+#### Opción A: Usar Service Role Key (Recomendado - Backend)
+
+Si usas el **service_role key** en tu backend, NO necesitas configurar políticas RLS ya que este key bypasea todas las políticas. Esto es **más seguro y sencillo** para aplicaciones backend.
+
+#### Opción B: Usar Anon Key con Políticas RLS
+
+Si prefieres usar el **anon key**, necesitas configurar estas políticas:
+
+##### Para permitir subida de archivos:
 
 ```sql
 -- Política para INSERT (subir archivos)
@@ -36,7 +46,7 @@ TO authenticated
 WITH CHECK (bucket_id = 'clipper-images');
 ```
 
-#### Para permitir lectura pública:
+##### Para permitir lectura pública:
 
 ```sql
 -- Política para SELECT (leer archivos públicamente)
@@ -46,7 +56,7 @@ TO public
 USING (bucket_id = 'clipper-images');
 ```
 
-#### Para permitir eliminación:
+##### Para permitir eliminación:
 
 ```sql
 -- Política para DELETE (eliminar archivos)
@@ -65,7 +75,16 @@ USING (bucket_id = 'clipper-images');
 3. Copia los siguientes valores:
 
    - **Project URL**: `https://tuproyecto.supabase.co`
-   - **API Key (anon/public)**: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
+   - **🔑 service_role key** (Recomendado para backend): `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
+     - ⚠️ **NO expongas esta key en el frontend**
+     - ✅ Bypasea políticas RLS
+     - ✅ Más simple de usar en backend
+   
+   **O alternativamente:**
+   
+   - **anon/public key** (Si prefieres usar políticas RLS): `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
+     - ✅ Segura para frontend
+     - ⚠️ Requiere configurar políticas RLS
 
 ### 5. Configurar application.properties
 
@@ -74,11 +93,17 @@ Agrega estas propiedades a tu archivo `application.properties`:
 ```properties
 # Supabase Configuration
 supabase.url=https://tuproyecto.supabase.co
-supabase.api-key=tu-api-key-aqui
+# IMPORTANTE: Usa service_role key (no anon key) para operaciones backend
+# El service_role key bypasea las políticas RLS
+supabase.api-key=tu-service-role-key-aqui
 supabase.storage.bucket=clipper-images
 ```
 
 **⚠️ IMPORTANTE**: 
+- Usa el **service_role key** (no el anon key) para operaciones desde el backend
+- El service_role key bypasea las políticas RLS, lo que simplifica la configuración
+- **NUNCA** expongas el service_role key en el frontend o en repositorios públicos
+- Considera usar variables de entorno para las credenciales en producción 
 - Reemplaza `tuproyecto` con tu URL real de Supabase
 - Reemplaza `tu-api-key-aqui` con tu API Key (anon/public)
 - NO uses la Service Role Key en el frontend, solo en backend
