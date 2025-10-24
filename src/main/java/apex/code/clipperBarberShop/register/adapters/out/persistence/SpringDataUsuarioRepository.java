@@ -8,4 +8,5 @@ import java.util.Optional;
 
 public interface SpringDataUsuarioRepository extends JpaRepository<Usuario, String> {
     Optional<Usuario> findByEmail(String email);
+    Optional<Usuario> findByVerificationToken(String verificationToken);
 }
