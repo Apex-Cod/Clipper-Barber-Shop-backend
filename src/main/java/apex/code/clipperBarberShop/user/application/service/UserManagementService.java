@@ -27,17 +27,23 @@ public class UserManagementService implements UserManagementUseCase {
     private final PasswordEncoder passwordEncoder;
     
     @Override
-    public UsuarioResponse obtenerUsuario(String userId) {
+    public UsuarioResponse obtenerUsuario(String userId, String requestedBy) {
         Usuario usuario = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+        
+        // Verificar permisos
+        validarAccesoUsuario(requestedBy, usuario);
         
         return mapToResponse(usuario);
     }
     
     @Override
-    public List<UsuarioResponse> listarUsuariosPorEmpresa(Long empresaId) {
+    public List<UsuarioResponse> listarUsuariosPorEmpresa(Long empresaId, String requestedBy) {
         Empresa empresa = empresaRepository.findById(empresaId)
                 .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
+        
+        // Verificar permisos: OWNER solo puede ver usuarios de su empresa
+        validarAccesoEmpresa(requestedBy, empresaId);
         
         return userRepository.findByEmpresaAndDeletedFalse(empresa)
                 .stream()
@@ -54,8 +60,22 @@ public class UserManagementService implements UserManagementUseCase {
     }
     
     @Override
-    public List<UsuarioResponse> listarUsuariosEliminados(Long empresaId) {
+    public List<UsuarioResponse> listarUsuariosEliminados(Long empresaId, String requestedBy) {
+        Usuario solicitante = userRepository.findById(requestedBy)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario solicitante no encontrado"));
+        
+        // Si empresaId es null y el usuario es OWNER, usar su empresa
+        if (empresaId == null && "OWNER".equals(solicitante.getRole())) {
+            if (solicitante.getEmpresa() == null) {
+                throw new IllegalArgumentException("OWNER debe tener una empresa asociada");
+            }
+            empresaId = solicitante.getEmpresa().getId();
+        }
+        
         if (empresaId != null) {
+            // Verificar permisos: OWNER solo puede ver su empresa
+            validarAccesoEmpresa(requestedBy, empresaId);
+            
             Empresa empresa = empresaRepository.findById(empresaId)
                     .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
             
@@ -63,6 +83,11 @@ public class UserManagementService implements UserManagementUseCase {
                     .stream()
                     .map(this::mapToResponse)
                     .collect(Collectors.toList());
+        }
+        
+        // Solo ADMIN puede ver todos los eliminados sin filtro de empresa
+        if (!"ADMIN".equals(solicitante.getRole())) {
+            throw new IllegalArgumentException("No tiene permisos para ver todos los usuarios eliminados");
         }
         
         return userRepository.findByDeletedTrue()
@@ -80,6 +105,9 @@ public class UserManagementService implements UserManagementUseCase {
         if (usuario.getDeleted()) {
             throw new IllegalArgumentException("No se puede actualizar un usuario eliminado");
         }
+        
+        // Verificar permisos
+        validarAccesoUsuario(updatedBy, usuario);
         
         // Sanitizar datos
         String name = StringUtils.sanitize(request.getName());
@@ -143,6 +171,9 @@ public class UserManagementService implements UserManagementUseCase {
             throw new IllegalArgumentException("No se puede cambiar el estado de un usuario eliminado");
         }
         
+        // Verificar permisos
+        validarAccesoUsuario(updatedBy, usuario);
+        
         usuario.setActivo(request.getActivo());
         usuario = userRepository.save(usuario);
         
@@ -159,6 +190,9 @@ public class UserManagementService implements UserManagementUseCase {
             throw new IllegalArgumentException("El usuario ya está eliminado");
         }
         
+        // Verificar permisos
+        validarAccesoUsuario(deletedBy, usuario);
+        
         // Soft delete
         usuario.softDelete(deletedBy);
         usuario.setActivo(false); // También marcamos como inactivo
@@ -167,13 +201,16 @@ public class UserManagementService implements UserManagementUseCase {
     
     @Override
     @Transactional
-    public UsuarioResponse restaurarUsuario(String userId) {
+    public UsuarioResponse restaurarUsuario(String userId, String restoredBy) {
         Usuario usuario = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
         
         if (!usuario.getDeleted()) {
             throw new IllegalArgumentException("El usuario no está eliminado");
         }
+        
+        // Verificar permisos
+        validarAccesoUsuario(restoredBy, usuario);
         
         // Verificar que el email no esté en uso (por si se reutilizó)
         if (userRepository.existsByEmailAndDeletedFalse(usuario.getEmail())) {
@@ -188,6 +225,73 @@ public class UserManagementService implements UserManagementUseCase {
         usuario = userRepository.save(usuario);
         
         return mapToResponse(usuario);
+    }
+    
+    /**
+     * Valida que el usuario solicitante tenga acceso al usuario objetivo
+     * ADMIN: Acceso total
+     * OWNER: Solo usuarios de su empresa
+     */
+    private void validarAccesoUsuario(String solicitanteId, Usuario usuarioObjetivo) {
+        Usuario solicitante = userRepository.findById(solicitanteId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario solicitante no encontrado"));
+        
+        // ADMIN tiene acceso total
+        if ("ADMIN".equals(solicitante.getRole())) {
+            return;
+        }
+        
+        // OWNER solo puede acceder a usuarios de su empresa
+        if ("OWNER".equals(solicitante.getRole())) {
+            // El OWNER debe tener una empresa
+            if (solicitante.getEmpresa() == null) {
+                throw new IllegalArgumentException("OWNER debe tener una empresa asociada");
+            }
+            
+            // El usuario objetivo debe tener empresa (empleados)
+            if (usuarioObjetivo.getEmpresa() == null) {
+                throw new IllegalArgumentException("No tiene permisos para acceder a este usuario");
+            }
+            
+            // Debe ser de la misma empresa
+            if (!solicitante.getEmpresa().getId().equals(usuarioObjetivo.getEmpresa().getId())) {
+                throw new IllegalArgumentException("No tiene permisos para acceder a este usuario");
+            }
+            return;
+        }
+        
+        // Otros roles no tienen acceso
+        throw new IllegalArgumentException("No tiene permisos para realizar esta acción");
+    }
+    
+    /**
+     * Valida que el usuario solicitante tenga acceso a una empresa
+     * ADMIN: Acceso a todas las empresas
+     * OWNER: Solo su propia empresa
+     */
+    private void validarAccesoEmpresa(String solicitanteId, Long empresaId) {
+        Usuario solicitante = userRepository.findById(solicitanteId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario solicitante no encontrado"));
+        
+        // ADMIN tiene acceso total
+        if ("ADMIN".equals(solicitante.getRole())) {
+            return;
+        }
+        
+        // OWNER solo puede acceder a su empresa
+        if ("OWNER".equals(solicitante.getRole())) {
+            if (solicitante.getEmpresa() == null) {
+                throw new IllegalArgumentException("OWNER debe tener una empresa asociada");
+            }
+            
+            if (!solicitante.getEmpresa().getId().equals(empresaId)) {
+                throw new IllegalArgumentException("No tiene permisos para acceder a esta empresa");
+            }
+            return;
+        }
+        
+        // Otros roles no tienen acceso
+        throw new IllegalArgumentException("No tiene permisos para realizar esta acción");
     }
     
     /**
