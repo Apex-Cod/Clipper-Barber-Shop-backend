@@ -1,6 +1,7 @@
 package apex.code.clipperBarberShop.Entities;
 
 import apex.code.clipperBarberShop.Entities.base.SoftDeletableEntity;
+import apex.code.clipperBarberShop.Entities.enums.PublicoObjetivo;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -32,11 +33,20 @@ public class Servicio extends SoftDeletableEntity {
     @Column(nullable = false)
     private Double price;
 
+    @Column(length = 50)
+    private String categoria; // Ej: "CORTE", "TINTE", "BARBA", "TRATAMIENTO", "MANICURA", "PEDICURA", etc.
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "publico_objetivo", length = 20, nullable = false)
+    @Builder.Default
+    private PublicoObjetivo publicoObjetivo = PublicoObjetivo.UNISEX; // Público al que está dirigido
+
     @Deprecated // Usar el campo 'deleted' de SoftDeletableEntity
     private Boolean activo;
     
     @PrePersist
     public void prePersist(){
         if(this.getDeleted() == null) this.setDeleted(false);
+        if(this.publicoObjetivo == null) this.publicoObjetivo = PublicoObjetivo.UNISEX;
     }
 }
