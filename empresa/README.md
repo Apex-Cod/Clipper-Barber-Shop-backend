@@ -44,10 +44,12 @@ empresa/
 
 ## 📡 Endpoints API
 
+> **Nota:** Todos los endpoints ahora usan `/mi-empresa` en lugar de `/{empresaId}`, ya que el ID de la empresa se detecta automáticamente del usuario OWNER autenticado.
+
 ### 1. Obtener Configuración
 
 ```http
-GET /api/empresas/{empresaId}/configuracion
+GET /api/empresas/mi-empresa/configuracion
 Authorization: Bearer {token}
 ```
 
@@ -85,7 +87,7 @@ Authorization: Bearer {token}
 ### 2. Actualizar Información Básica
 
 ```http
-PUT /api/empresas/{empresaId}/informacion-basica
+PUT /api/empresas/mi-empresa/informacion-basica
 Authorization: Bearer {token}
 Content-Type: application/json
 ```
@@ -107,7 +109,7 @@ Content-Type: application/json
 ### 3. Actualizar Horarios
 
 ```http
-PUT /api/empresas/{empresaId}/horarios
+PUT /api/empresas/mi-empresa/horarios
 Authorization: Bearer {token}
 Content-Type: application/json
 ```
@@ -134,7 +136,7 @@ Content-Type: application/json
 ### 4. Actualizar Ubicación
 
 ```http
-PUT /api/empresas/{empresaId}/ubicacion
+PUT /api/empresas/mi-empresa/ubicacion
 Authorization: Bearer {token}
 Content-Type: application/json
 ```
@@ -151,7 +153,7 @@ Content-Type: application/json
 ### 5. Subir Logo
 
 ```http
-POST /api/empresas/{empresaId}/logo
+POST /api/empresas/mi-empresa/logo
 Authorization: Bearer {token}
 Content-Type: multipart/form-data
 ```
@@ -167,7 +169,7 @@ Content-Type: multipart/form-data
 ### 6. Subir Banner
 
 ```http
-POST /api/empresas/{empresaId}/banner
+POST /api/empresas/mi-empresa/banner
 Authorization: Bearer {token}
 Content-Type: multipart/form-data
 ```
@@ -178,23 +180,30 @@ Content-Type: multipart/form-data
 ### 7. Eliminar Logo
 
 ```http
-DELETE /api/empresas/{empresaId}/logo
+DELETE /api/empresas/mi-empresa/logo
 Authorization: Bearer {token}
 ```
 
 ### 8. Eliminar Banner
 
 ```http
-DELETE /api/empresas/{empresaId}/banner
+DELETE /api/empresas/mi-empresa/banner
 Authorization: Bearer {token}
 ```
 
 ## 🔐 Permisos
 
-Todos los endpoints requieren autenticación y rol **OWNER** o **ADMIN**:
+Todos los endpoints requieren autenticación y rol **OWNER**:
 
-- ✅ **ADMIN**: Puede modificar cualquier empresa
-- ✅ **OWNER**: Solo puede modificar su propia empresa
+- ✅ **OWNER**: Solo puede gestionar su propia empresa
+- ⚡ **Auto-detección**: No necesita especificar `empresaId`, se detecta automáticamente del usuario autenticado
+- 🔒 **Seguridad**: Cada OWNER solo puede modificar la empresa asociada a su usuario
+
+### Validaciones de Seguridad:
+
+1. El usuario debe tener rol `OWNER`
+2. El usuario debe tener una empresa asociada (`usuario.empresa != null`)
+3. Solo puede modificar su propia empresa
 
 ## 🖼️ Gestión de Imágenes
 
@@ -266,7 +275,7 @@ publico_objetivo VARCHAR(20) NOT NULL DEFAULT 'UNISEX'
 #### Actualizar información básica:
 ```bash
 curl -X PUT \
-  http://localhost:8080/api/empresas/1/informacion-basica \
+  http://localhost:8080/api/empresas/mi-empresa/informacion-basica \
   -H "Authorization: Bearer tu-token" \
   -H "Content-Type: application/json" \
   -d '{
@@ -281,7 +290,7 @@ curl -X PUT \
 #### Subir logo:
 ```bash
 curl -X POST \
-  http://localhost:8080/api/empresas/1/logo \
+  http://localhost:8080/api/empresas/mi-empresa/logo \
   -H "Authorization: Bearer tu-token" \
   -F "file=@/path/to/logo.jpg"
 ```
@@ -289,11 +298,11 @@ curl -X POST \
 ### Con JavaScript (Frontend):
 
 ```javascript
-// Subir logo
+// Subir logo (no necesita empresaId, se detecta automáticamente)
 const formData = new FormData();
 formData.append('file', fileInput.files[0]);
 
-const response = await fetch(`/api/empresas/${empresaId}/logo`, {
+const response = await fetch('/api/empresas/mi-empresa/logo', {
   method: 'POST',
   headers: {
     'Authorization': `Bearer ${token}`
