@@ -48,9 +48,13 @@ public class RegistroController {
     }
     
     /**
-     * Endpoint para verificar el email mediante el token (App Móvil)
-     * El usuario hace clic en el enlace del email y la app captura el token
-     * USO: Apps móviles - Devuelve JSON con el resultado
+     * MÉTODO 1: Verificación mediante Deep Link (Usuario hace clic en enlace del email)
+     * 
+     * USO: Cuando el usuario hace clic en el enlace del email
+     * Ejemplo: myapp://verify?token=123456
+     * 
+     * La app captura el token automáticamente y llama a este endpoint
+     * Solo necesita el token porque es único en la base de datos
      */
     @GetMapping("/verify")
     public ResponseEntity<ApiResponse<Object>> verifyEmail(@RequestParam("token") String token) {
@@ -65,9 +69,15 @@ public class RegistroController {
     }
     
     /**
-     * Endpoint para verificar el email mediante código (App Móvil)
-     * El usuario ingresa el código de 6 dígitos manualmente en la app
-     * USO: Apps móviles
+     * MÉTODO 2: Verificación mediante ingreso manual (Usuario escribe el código)
+     * 
+     * USO: Cuando el usuario ingresa manualmente el código de 6 dígitos en la app
+     * Ejemplo: Usuario ve "Tu código es: 123456" y lo escribe en la pantalla de verificación
+     * 
+     * Requiere email + código para mayor seguridad y para validar que el código
+     * pertenece específicamente a ese usuario (evita colisiones de códigos)
+     * 
+     * También tiene control de intentos fallidos (máximo 3 intentos)
      */
     @PostMapping("/verify-code")
     public ResponseEntity<ApiResponse<Object>> verifyEmailWithCode(

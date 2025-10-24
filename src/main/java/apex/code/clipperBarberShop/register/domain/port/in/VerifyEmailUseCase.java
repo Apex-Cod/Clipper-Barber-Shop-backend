@@ -6,16 +6,18 @@ package apex.code.clipperBarberShop.register.domain.port.in;
 public interface VerifyEmailUseCase {
     
     /**
-     * Verifica el email de un usuario mediante el token
-     * @param token Token de verificación
+     * Verifica el email de un usuario mediante el token/código
+     * @param token Token de verificación (UUID para web o código de 6 dígitos para móvil)
      * @return true si la verificación fue exitosa
      * @throws IllegalArgumentException si el token es inválido o expiró
      */
     boolean verifyEmail(String token);
     
     /**
-     * Verifica el email de un usuario mediante código de 6 dígitos (para apps móviles)
-     * @param email Email del usuario
+     * Verifica el email de un usuario mediante código + email (para apps móviles)
+     * Este método es más seguro ya que valida que el código pertenezca al email específico
+     * 
+     * @param email Email del usuario (para validar que el código le pertenece)
      * @param code Código de verificación de 6 dígitos
      * @return true si la verificación fue exitosa
      * @throws IllegalArgumentException si el código es inválido, expiró o no corresponde al email
