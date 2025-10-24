@@ -17,7 +17,10 @@ public class DatabaseUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Usuario u = usuarioRepository.findByEmail(username)
+        // Normalizar email a minúsculas según RFC 5321/5322 (best practice)
+        String normalizedEmail = username.trim().toLowerCase();
+        
+        Usuario u = usuarioRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
 
         // Use email as username and assign roles without the ROLE_ prefix so Spring will add it

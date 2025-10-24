@@ -26,7 +26,7 @@ public class Resenia extends SoftDeletableEntity {
     @Column(name = "cliente_id", nullable = false)
     private String clienteId;
 
-    @Column(name = "empleado_id", nullable = false)
+    @Column(name = "empleado_id", nullable = true)
     private String empleadoId;
 
     @ManyToOne(fetch = FetchType.LAZY)
