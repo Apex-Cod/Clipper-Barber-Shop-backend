@@ -87,6 +87,29 @@ public class EmailServiceImpl implements EmailService {
         }
     }
     
+    @Override
+    @Async
+    public void sendTemporaryPasswordEmail(String toEmail, String userName, String temporaryPassword) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject("Recuperación de Contraseña - Clipper Barber Shop");
+            
+            String htmlContent = buildTemporaryPasswordEmailTemplate(userName, temporaryPassword);
+            helper.setText(htmlContent, true);
+            
+            mailSender.send(message);
+            log.info("Email de recuperación de contraseña enviado a: {}", toEmail);
+            
+        } catch (MessagingException e) {
+            log.error("Error al enviar email de recuperación a: {}", toEmail, e);
+            throw new RuntimeException("Error al enviar email de recuperación", e);
+        }
+    }
+    
     /**
      * Template para apps móviles - muestra código de 6 dígitos
      */
@@ -226,5 +249,74 @@ public class EmailServiceImpl implements EmailService {
             </body>
             </html>
             """.formatted(userName);
+    }
+    
+    private String buildTemporaryPasswordEmailTemplate(String userName, String temporaryPassword) {
+        return """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background-color: #e74c3c; color: white; padding: 20px; text-align: center; }
+                    .content { background-color: #f4f4f4; padding: 30px; }
+                    .password-box { 
+                        background-color: white; 
+                        border: 2px solid #e74c3c; 
+                        padding: 20px; 
+                        text-align: center; 
+                        margin: 20px 0;
+                        border-radius: 5px;
+                    }
+                    .password { 
+                        font-size: 32px; 
+                        font-weight: bold; 
+                        color: #e74c3c; 
+                        letter-spacing: 3px;
+                        font-family: 'Courier New', monospace;
+                    }
+                    .warning { 
+                        background-color: #fff3cd; 
+                        border-left: 4px solid #ffc107; 
+                        padding: 15px; 
+                        margin: 20px 0;
+                    }
+                    .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>🔒 Recuperación de Contraseña</h1>
+                    </div>
+                    <div class="content">
+                        <h2>¡Hola %s!</h2>
+                        <p>Has solicitado recuperar tu contraseña. Hemos generado una contraseña temporal para ti:</p>
+                        
+                        <div class="password-box">
+                            <p style="margin: 0; font-size: 14px; color: #666;">Tu contraseña temporal es:</p>
+                            <p class="password">%s</p>
+                        </div>
+                        
+                        <div class="warning">
+                            <p style="margin: 0;"><strong>⚠️ Importante:</strong></p>
+                            <ul style="margin: 10px 0 0 0;">
+                                <li>Utiliza esta contraseña para iniciar sesión</li>
+                                <li>Por seguridad, te recomendamos cambiarla inmediatamente</li>
+                                <li>Esta contraseña es temporal y única</li>
+                            </ul>
+                        </div>
+                        
+                        <p>Si no solicitaste esta recuperación de contraseña, por favor contacta con nosotros inmediatamente.</p>
+                    </div>
+                    <div class="footer">
+                        <p>© 2025 Clipper Barber Shop. Todos los derechos reservados.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(userName, temporaryPassword);
     }
 }

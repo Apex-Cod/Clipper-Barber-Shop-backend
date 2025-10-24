@@ -19,4 +19,12 @@ public interface EmailService {
      * @param userName Nombre del usuario
      */
     void sendWelcomeEmail(String toEmail, String userName);
+    
+    /**
+     * Envía un email con contraseña temporal para recuperación de cuenta
+     * @param toEmail Email del destinatario
+     * @param userName Nombre del usuario
+     * @param temporaryPassword Contraseña temporal generada
+     */
+    void sendTemporaryPasswordEmail(String toEmail, String userName, String temporaryPassword);
 }
