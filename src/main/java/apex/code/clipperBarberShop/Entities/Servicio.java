@@ -1,7 +1,6 @@
 package apex.code.clipperBarberShop.Entities;
 
 import apex.code.clipperBarberShop.Entities.base.SoftDeletableEntity;
-import apex.code.clipperBarberShop.Entities.enums.CategoriaServicio;
 import apex.code.clipperBarberShop.Entities.enums.PublicoObjetivo;
 import jakarta.persistence.*;
 import lombok.*;
