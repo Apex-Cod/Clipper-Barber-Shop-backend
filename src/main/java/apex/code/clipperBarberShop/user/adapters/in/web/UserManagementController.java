@@ -87,6 +87,8 @@ public class UserManagementController {
     
     /**
      * Actualizar información de un usuario
+     * ADMIN: Puede actualizar cualquier usuario
+     * OWNER: Solo puede actualizar usuarios de su empresa
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
@@ -141,6 +143,8 @@ public class UserManagementController {
     
     /**
      * Cambiar estado activo/inactivo de un usuario
+     * ADMIN: Puede cambiar estado de cualquier usuario
+     * OWNER: Solo puede cambiar estado de usuarios de su empresa
      */
     @PatchMapping("/{id}/estado")
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
@@ -155,6 +159,8 @@ public class UserManagementController {
     
     /**
      * Activar un usuario
+     * ADMIN: Puede activar cualquier usuario
+     * OWNER: Solo puede activar usuarios de su empresa
      */
     @PatchMapping("/{id}/activar")
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
@@ -170,6 +176,8 @@ public class UserManagementController {
     
     /**
      * Desactivar un usuario
+     * ADMIN: Puede desactivar cualquier usuario
+     * OWNER: Solo puede desactivar usuarios de su empresa
      */
     @PatchMapping("/{id}/desactivar")
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
@@ -185,6 +193,8 @@ public class UserManagementController {
     
     /**
      * Eliminar un usuario (soft delete)
+     * ADMIN: Puede eliminar cualquier usuario
+     * OWNER: Solo puede eliminar usuarios de su empresa
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
