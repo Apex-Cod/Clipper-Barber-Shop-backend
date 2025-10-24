@@ -9,42 +9,50 @@ import org.springframework.web.multipart.MultipartFile;
 public interface EmpresaConfigUseCase {
     
     /**
-     * Obtiene la configuración completa de una empresa
+     * Obtiene la configuración completa de la empresa del usuario autenticado (OWNER)
+     * @param userId ID del usuario (OWNER) autenticado
      */
-    EmpresaConfigResponse obtenerConfiguracion(Long empresaId);
+    EmpresaConfigResponse obtenerConfiguracion(String userId);
     
     /**
-     * Actualiza la información básica de la empresa
+     * Actualiza la información básica de la empresa del usuario autenticado (OWNER)
+     * @param userId ID del usuario (OWNER) autenticado
      */
-    EmpresaConfigResponse actualizarInformacionBasica(Long empresaId, ActualizarInformacionBasicaRequest request);
+    EmpresaConfigResponse actualizarInformacionBasica(String userId, ActualizarInformacionBasicaRequest request);
     
     /**
-     * Actualiza los horarios de atención de la empresa
+     * Actualiza los horarios de atención de la empresa del usuario autenticado (OWNER)
+     * @param userId ID del usuario (OWNER) autenticado
      */
-    EmpresaConfigResponse actualizarHorarios(Long empresaId, ActualizarHorariosRequest request);
+    EmpresaConfigResponse actualizarHorarios(String userId, ActualizarHorariosRequest request);
     
     /**
-     * Actualiza la ubicación de la empresa
+     * Actualiza la ubicación de la empresa del usuario autenticado (OWNER)
+     * @param userId ID del usuario (OWNER) autenticado
      */
-    EmpresaConfigResponse actualizarUbicacion(Long empresaId, ActualizarUbicacionRequest request);
+    EmpresaConfigResponse actualizarUbicacion(String userId, ActualizarUbicacionRequest request);
     
     /**
-     * Sube el logo de la empresa a Supabase y actualiza la URL
+     * Sube el logo de la empresa del usuario autenticado (OWNER) a Supabase y actualiza la URL
+     * @param userId ID del usuario (OWNER) autenticado
      */
-    EmpresaConfigResponse subirLogo(Long empresaId, MultipartFile archivo);
+    EmpresaConfigResponse subirLogo(String userId, MultipartFile archivo);
     
     /**
-     * Sube el banner de la empresa a Supabase y actualiza la URL
+     * Sube el banner de la empresa del usuario autenticado (OWNER) a Supabase y actualiza la URL
+     * @param userId ID del usuario (OWNER) autenticado
      */
-    EmpresaConfigResponse subirBanner(Long empresaId, MultipartFile archivo);
+    EmpresaConfigResponse subirBanner(String userId, MultipartFile archivo);
     
     /**
-     * Elimina el logo de la empresa
+     * Elimina el logo de la empresa del usuario autenticado (OWNER)
+     * @param userId ID del usuario (OWNER) autenticado
      */
-    void eliminarLogo(Long empresaId);
+    void eliminarLogo(String userId);
     
     /**
-     * Elimina el banner de la empresa
+     * Elimina el banner de la empresa del usuario autenticado (OWNER)
+     * @param userId ID del usuario (OWNER) autenticado
      */
-    void eliminarBanner(Long empresaId);
+    void eliminarBanner(String userId);
 }

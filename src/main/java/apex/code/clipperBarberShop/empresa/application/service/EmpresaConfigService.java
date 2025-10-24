@@ -1,6 +1,7 @@
 package apex.code.clipperBarberShop.empresa.application.service;
 
 import apex.code.clipperBarberShop.Entities.Empresa;
+import apex.code.clipperBarberShop.Entities.Usuario;
 import apex.code.clipperBarberShop.Entities.enums.PublicoObjetivo;
 import apex.code.clipperBarberShop.empresa.adapters.out.storage.SupabaseStorageAdapter;
 import apex.code.clipperBarberShop.empresa.application.dto.*;
@@ -8,6 +9,7 @@ import apex.code.clipperBarberShop.empresa.domain.port.in.EmpresaConfigUseCase;
 import apex.code.clipperBarberShop.empresa.domain.port.out.StoragePort;
 import apex.code.clipperBarberShop.register.domain.port.out.EmpresaRepositoryPort;
 import apex.code.clipperBarberShop.shared.util.StringUtils;
+import apex.code.clipperBarberShop.user.domain.port.out.UserRepositoryPort;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,25 +24,41 @@ import org.springframework.web.multipart.MultipartFile;
 public class EmpresaConfigService implements EmpresaConfigUseCase {
     
     private final EmpresaRepositoryPort empresaRepository;
+    private final UserRepositoryPort userRepository;
     private final StoragePort storagePort;
     private final SupabaseStorageAdapter supabaseAdapter;
     
     @Value("${supabase.storage.bucket}")
     private String bucket;
     
-    @Override
-    public EmpresaConfigResponse obtenerConfiguracion(Long empresaId) {
-        Empresa empresa = empresaRepository.findById(empresaId)
-                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
+    /**
+     * Obtiene la empresa del usuario OWNER autenticado
+     */
+    private Empresa obtenerEmpresaDelUsuario(String userId) {
+        Usuario usuario = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
         
+        if (!"OWNER".equals(usuario.getRole())) {
+            throw new IllegalArgumentException("Solo los usuarios OWNER pueden gestionar la configuración de empresa");
+        }
+        
+        if (usuario.getEmpresa() == null) {
+            throw new IllegalArgumentException("El usuario OWNER no tiene una empresa asociada");
+        }
+        
+        return usuario.getEmpresa();
+    }
+    
+    @Override
+    public EmpresaConfigResponse obtenerConfiguracion(String userId) {
+        Empresa empresa = obtenerEmpresaDelUsuario(userId);
         return mapToResponse(empresa);
     }
     
     @Override
     @Transactional
-    public EmpresaConfigResponse actualizarInformacionBasica(Long empresaId, ActualizarInformacionBasicaRequest request) {
-        Empresa empresa = empresaRepository.findById(empresaId)
-                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
+    public EmpresaConfigResponse actualizarInformacionBasica(String userId, ActualizarInformacionBasicaRequest request) {
+        Empresa empresa = obtenerEmpresaDelUsuario(userId);
         
         // Sanitizar y actualizar campos
         empresa.setNombre(StringUtils.sanitize(request.getNombre()));
@@ -61,9 +79,8 @@ public class EmpresaConfigService implements EmpresaConfigUseCase {
     
     @Override
     @Transactional
-    public EmpresaConfigResponse actualizarHorarios(Long empresaId, ActualizarHorariosRequest request) {
-        Empresa empresa = empresaRepository.findById(empresaId)
-                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
+    public EmpresaConfigResponse actualizarHorarios(String userId, ActualizarHorariosRequest request) {
+        Empresa empresa = obtenerEmpresaDelUsuario(userId);
         
         empresa.setHorarioLunes(request.getHorarioLunes());
         empresa.setHorarioMartes(request.getHorarioMartes());
@@ -79,9 +96,8 @@ public class EmpresaConfigService implements EmpresaConfigUseCase {
     
     @Override
     @Transactional
-    public EmpresaConfigResponse actualizarUbicacion(Long empresaId, ActualizarUbicacionRequest request) {
-        Empresa empresa = empresaRepository.findById(empresaId)
-                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
+    public EmpresaConfigResponse actualizarUbicacion(String userId, ActualizarUbicacionRequest request) {
+        Empresa empresa = obtenerEmpresaDelUsuario(userId);
         
         empresa.setLatitud(request.getLatitud());
         empresa.setLongitud(request.getLongitud());
@@ -96,9 +112,8 @@ public class EmpresaConfigService implements EmpresaConfigUseCase {
     
     @Override
     @Transactional
-    public EmpresaConfigResponse subirLogo(Long empresaId, MultipartFile archivo) {
-        Empresa empresa = empresaRepository.findById(empresaId)
-                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
+    public EmpresaConfigResponse subirLogo(String userId, MultipartFile archivo) {
+        Empresa empresa = obtenerEmpresaDelUsuario(userId);
         
         // Validar archivo
         supabaseAdapter.validateImageFile(archivo);
@@ -114,7 +129,7 @@ public class EmpresaConfigService implements EmpresaConfigUseCase {
         
         // Generar path único
         String fileName = supabaseAdapter.generateUniqueFileName(archivo.getOriginalFilename());
-        String path = String.format("empresas/%d/logo/%s", empresaId, fileName);
+        String path = String.format("empresas/%d/logo/%s", empresa.getId(), fileName);
         
         // Subir archivo
         String url = storagePort.uploadFile(bucket, path, archivo);
@@ -129,9 +144,8 @@ public class EmpresaConfigService implements EmpresaConfigUseCase {
     
     @Override
     @Transactional
-    public EmpresaConfigResponse subirBanner(Long empresaId, MultipartFile archivo) {
-        Empresa empresa = empresaRepository.findById(empresaId)
-                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
+    public EmpresaConfigResponse subirBanner(String userId, MultipartFile archivo) {
+        Empresa empresa = obtenerEmpresaDelUsuario(userId);
         
         // Validar archivo
         supabaseAdapter.validateImageFile(archivo);
@@ -147,7 +161,7 @@ public class EmpresaConfigService implements EmpresaConfigUseCase {
         
         // Generar path único
         String fileName = supabaseAdapter.generateUniqueFileName(archivo.getOriginalFilename());
-        String path = String.format("empresas/%d/banner/%s", empresaId, fileName);
+        String path = String.format("empresas/%d/banner/%s", empresa.getId(), fileName);
         
         // Subir archivo
         String url = storagePort.uploadFile(bucket, path, archivo);
@@ -162,9 +176,8 @@ public class EmpresaConfigService implements EmpresaConfigUseCase {
     
     @Override
     @Transactional
-    public void eliminarLogo(Long empresaId) {
-        Empresa empresa = empresaRepository.findById(empresaId)
-                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
+    public void eliminarLogo(String userId) {
+        Empresa empresa = obtenerEmpresaDelUsuario(userId);
         
         if (empresa.getLogoPath() != null) {
             storagePort.deleteFile(bucket, empresa.getLogoPath());
@@ -176,9 +189,8 @@ public class EmpresaConfigService implements EmpresaConfigUseCase {
     
     @Override
     @Transactional
-    public void eliminarBanner(Long empresaId) {
-        Empresa empresa = empresaRepository.findById(empresaId)
-                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
+    public void eliminarBanner(String userId) {
+        Empresa empresa = obtenerEmpresaDelUsuario(userId);
         
         if (empresa.getBannerPath() != null) {
             storagePort.deleteFile(bucket, empresa.getBannerPath());

@@ -11,8 +11,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.security.Principal;
+
 /**
  * Controlador REST para configuración de empresa
+ * Solo accesible por OWNER de la empresa
  */
 @RestController
 @RequestMapping("/api/empresas")
@@ -22,93 +25,92 @@ public class EmpresaConfigController {
     private final EmpresaConfigUseCase empresaConfigUseCase;
     
     /**
-     * Obtener configuración de la empresa
+     * Obtener configuración de la empresa del OWNER autenticado
      */
-    @GetMapping("/{empresaId}/configuracion")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
-    public ResponseEntity<ApiResponse<EmpresaConfigResponse>> obtenerConfiguracion(
-            @PathVariable Long empresaId) {
-        EmpresaConfigResponse config = empresaConfigUseCase.obtenerConfiguracion(empresaId);
+    @GetMapping("/mi-empresa/configuracion")
+    @PreAuthorize("hasRole('OWNER')")
+    public ResponseEntity<ApiResponse<EmpresaConfigResponse>> obtenerConfiguracion(Principal principal) {
+        EmpresaConfigResponse config = empresaConfigUseCase.obtenerConfiguracion(principal.getName());
         return ResponseEntity.ok(ApiResponse.success("Configuración obtenida", config));
     }
     
     /**
-     * Actualizar información básica de la empresa
+     * Actualizar información básica de la empresa del OWNER autenticado
      */
-    @PutMapping("/{empresaId}/informacion-basica")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PutMapping("/mi-empresa/informacion-basica")
+    @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<ApiResponse<EmpresaConfigResponse>> actualizarInformacionBasica(
-            @PathVariable Long empresaId,
-            @Valid @RequestBody ActualizarInformacionBasicaRequest request) {
-        EmpresaConfigResponse config = empresaConfigUseCase.actualizarInformacionBasica(empresaId, request);
+            @Valid @RequestBody ActualizarInformacionBasicaRequest request,
+            Principal principal) {
+        EmpresaConfigResponse config = empresaConfigUseCase.actualizarInformacionBasica(principal.getName(), request);
         return ResponseEntity.ok(ApiResponse.success("Información actualizada", config));
     }
     
     /**
-     * Actualizar horarios de atención
+     * Actualizar horarios de atención de la empresa del OWNER autenticado
      */
-    @PutMapping("/{empresaId}/horarios")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PutMapping("/mi-empresa/horarios")
+    @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<ApiResponse<EmpresaConfigResponse>> actualizarHorarios(
-            @PathVariable Long empresaId,
-            @Valid @RequestBody ActualizarHorariosRequest request) {
-        EmpresaConfigResponse config = empresaConfigUseCase.actualizarHorarios(empresaId, request);
+            @Valid @RequestBody ActualizarHorariosRequest request,
+            Principal principal) {
+        EmpresaConfigResponse config = empresaConfigUseCase.actualizarHorarios(principal.getName(), request);
         return ResponseEntity.ok(ApiResponse.success("Horarios actualizados", config));
     }
     
     /**
-     * Actualizar ubicación de la empresa
+     * Actualizar ubicación de la empresa del OWNER autenticado
      */
-    @PutMapping("/{empresaId}/ubicacion")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PutMapping("/mi-empresa/ubicacion")
+    @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<ApiResponse<EmpresaConfigResponse>> actualizarUbicacion(
-            @PathVariable Long empresaId,
-            @Valid @RequestBody ActualizarUbicacionRequest request) {
-        EmpresaConfigResponse config = empresaConfigUseCase.actualizarUbicacion(empresaId, request);
+            @Valid @RequestBody ActualizarUbicacionRequest request,
+            Principal principal) {
+        EmpresaConfigResponse config = empresaConfigUseCase.actualizarUbicacion(principal.getName(), request);
         return ResponseEntity.ok(ApiResponse.success("Ubicación actualizada", config));
     }
     
     /**
-     * Subir logo de la empresa
+     * Subir logo de la empresa del OWNER autenticado
      */
-    @PostMapping(value = "/{empresaId}/logo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PostMapping(value = "/mi-empresa/logo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<ApiResponse<EmpresaConfigResponse>> subirLogo(
-            @PathVariable Long empresaId,
-            @RequestParam("file") MultipartFile file) {
-        EmpresaConfigResponse config = empresaConfigUseCase.subirLogo(empresaId, file);
+            @RequestParam("file") MultipartFile file,
+            Principal principal) {
+        EmpresaConfigResponse config = empresaConfigUseCase.subirLogo(principal.getName(), file);
         return ResponseEntity.ok(ApiResponse.success("Logo subido exitosamente", config));
     }
     
     /**
-     * Subir banner de la empresa
+     * Subir banner de la empresa del OWNER autenticado
      */
-    @PostMapping(value = "/{empresaId}/banner", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PostMapping(value = "/mi-empresa/banner", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<ApiResponse<EmpresaConfigResponse>> subirBanner(
-            @PathVariable Long empresaId,
-            @RequestParam("file") MultipartFile file) {
-        EmpresaConfigResponse config = empresaConfigUseCase.subirBanner(empresaId, file);
+            @RequestParam("file") MultipartFile file,
+            Principal principal) {
+        EmpresaConfigResponse config = empresaConfigUseCase.subirBanner(principal.getName(), file);
         return ResponseEntity.ok(ApiResponse.success("Banner subido exitosamente", config));
     }
     
     /**
-     * Eliminar logo de la empresa
+     * Eliminar logo de la empresa del OWNER autenticado
      */
-    @DeleteMapping("/{empresaId}/logo")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
-    public ResponseEntity<ApiResponse<Object>> eliminarLogo(@PathVariable Long empresaId) {
-        empresaConfigUseCase.eliminarLogo(empresaId);
+    @DeleteMapping("/mi-empresa/logo")
+    @PreAuthorize("hasRole('OWNER')")
+    public ResponseEntity<ApiResponse<Object>> eliminarLogo(Principal principal) {
+        empresaConfigUseCase.eliminarLogo(principal.getName());
         return ResponseEntity.ok(ApiResponse.success("Logo eliminado", null));
     }
     
     /**
-     * Eliminar banner de la empresa
+     * Eliminar banner de la empresa del OWNER autenticado
      */
-    @DeleteMapping("/{empresaId}/banner")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
-    public ResponseEntity<ApiResponse<Object>> eliminarBanner(@PathVariable Long empresaId) {
-        empresaConfigUseCase.eliminarBanner(empresaId);
+    @DeleteMapping("/mi-empresa/banner")
+    @PreAuthorize("hasRole('OWNER')")
+    public ResponseEntity<ApiResponse<Object>> eliminarBanner(Principal principal) {
+        empresaConfigUseCase.eliminarBanner(principal.getName());
         return ResponseEntity.ok(ApiResponse.success("Banner eliminado", null));
     }
 }
