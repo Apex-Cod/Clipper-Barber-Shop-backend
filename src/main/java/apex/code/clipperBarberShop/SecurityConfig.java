@@ -47,6 +47,9 @@ public class SecurityConfig {
                         "/api/auth/**",
                         "/api/registro/empresa",
                         "/api/registro/cliente",
+                        "/api/registro/verify",           // Verificación por enlace/código (GET)
+                        "/api/registro/verify-code",      // Verificación manual (POST)
+                        "/api/registro/resend-verification", // Reenviar email
                         "/api/test/public",
                         "/actuator/**"
                 ).permitAll()
