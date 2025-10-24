@@ -98,6 +98,87 @@ public class VerifyEmailService implements VerifyEmailUseCase {
     
     @Override
     @Transactional
+    public boolean verifyEmailWithCode(String email, String code) {
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("Email es requerido");
+        }
+        
+        if (code == null || code.trim().isEmpty()) {
+            throw new IllegalArgumentException("Código de verificación es requerido");
+        }
+        
+        String normalizedEmail = email.trim().toLowerCase();
+        String normalizedCode = code.trim();
+        
+        // Buscar usuario por email
+        Usuario usuario = usuarioRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+        
+        // Verificar que el usuario no esté eliminado
+        if (usuario.getDeleted()) {
+            throw new IllegalArgumentException("Usuario no encontrado");
+        }
+        
+        // Verificar si ya está verificado
+        if (usuario.getEmailVerified()) {
+            log.info("El usuario {} ya tiene el email verificado", usuario.getEmail());
+            return true;
+        }
+        
+        // Verificar si el token expiró
+        if (usuario.getVerificationTokenExpiry() != null && 
+            usuario.getVerificationTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("El código de verificación ha expirado. Por favor, solicita uno nuevo.");
+        }
+        
+        // Verificar número de intentos
+        Integer attempts = usuario.getVerificationAttempts() != null ? usuario.getVerificationAttempts() : 0;
+        if (attempts >= maxVerificationAttempts) {
+            throw new IllegalArgumentException("Has excedido el número máximo de intentos. Por favor, solicita un nuevo código.");
+        }
+        
+        // Verificar que el código coincida
+        if (!normalizedCode.equals(usuario.getVerificationToken())) {
+            // Incrementar intentos fallidos
+            usuario.setVerificationAttempts(attempts + 1);
+            usuarioRepository.save(usuario);
+            
+            int remainingAttempts = maxVerificationAttempts - (attempts + 1);
+            log.warn("Código incorrecto para {}: intento {} de {}", 
+                email, attempts + 1, maxVerificationAttempts);
+            
+            if (remainingAttempts > 0) {
+                throw new IllegalArgumentException(
+                    "Código incorrecto. Te quedan " + remainingAttempts + " intentos.");
+            } else {
+                throw new IllegalArgumentException(
+                    "Has excedido el número máximo de intentos. Por favor, solicita un nuevo código.");
+            }
+        }
+        
+        // Código correcto - marcar como verificado
+        usuario.setEmailVerified(true);
+        usuario.setVerificationToken(null);
+        usuario.setVerificationTokenExpiry(null);
+        usuario.setVerificationAttempts(0);
+        usuario.setActivo(true);
+        
+        verificationRepository.save(usuario);
+        
+        log.info("Email verificado exitosamente para el usuario: {}", usuario.getEmail());
+        
+        // Enviar email de bienvenida
+        try {
+            emailService.sendWelcomeEmail(usuario.getEmail(), usuario.getName());
+        } catch (Exception e) {
+            log.error("Error al enviar email de bienvenida", e);
+        }
+        
+        return true;
+    }
+    
+    @Override
+    @Transactional
     public void resendVerificationEmail(String email) {
         if (email == null || email.trim().isEmpty()) {
             throw new IllegalArgumentException("Email inválido");

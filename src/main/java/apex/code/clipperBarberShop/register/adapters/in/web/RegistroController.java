@@ -12,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.view.RedirectView;
 
 import java.security.Principal;
 
@@ -49,19 +48,19 @@ public class RegistroController {
     }
     
     /**
-     * Endpoint para verificar el email mediante el token
-     * Este endpoint se llama automáticamente cuando el usuario hace clic en el enlace del email
-     * USO: Web (enlaces clickeables)
+     * Endpoint para verificar el email mediante el token (App Móvil)
+     * El usuario hace clic en el enlace del email y la app captura el token
+     * USO: Apps móviles - Devuelve JSON con el resultado
      */
     @GetMapping("/verify")
-    public RedirectView verifyEmail(@RequestParam("token") String token) {
+    public ResponseEntity<ApiResponse<Object>> verifyEmail(@RequestParam("token") String token) {
         try {
             verifyEmailUseCase.verifyEmail(token);
-            // Redirigir al frontend con mensaje de éxito
-            return new RedirectView("http://localhost:3000/verification/success");
+            return ResponseEntity.ok(ApiResponse.success(
+                "Email verificado exitosamente. Ya puedes iniciar sesión.", null));
         } catch (IllegalArgumentException e) {
-            // Redirigir al frontend con mensaje de error
-            return new RedirectView("http://localhost:3000/verification/error?message=" + e.getMessage());
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error(e.getMessage(), null));
         }
     }
     
@@ -75,9 +74,9 @@ public class RegistroController {
             @RequestParam("email") String email,
             @RequestParam("code") String code) {
         try {
-            // Primero verificamos que el código corresponda al email
-            verifyEmailUseCase.verifyEmail(code);
-            return ResponseEntity.ok(ApiResponse.success("Email verificado exitosamente", null));
+            verifyEmailUseCase.verifyEmailWithCode(email, code);
+            return ResponseEntity.ok(ApiResponse.success(
+                "Email verificado exitosamente. Ya puedes iniciar sesión.", null));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
                 .body(ApiResponse.error(e.getMessage(), null));
