@@ -34,6 +34,11 @@ public class AuthService implements AuthUseCase {
             throw new IllegalArgumentException("Usuario no encontrado o inactivo");
         }
         
+        // Verificar que el email esté verificado
+        if (!user.getEmailVerified()) {
+            throw new IllegalArgumentException("Debes verificar tu email antes de iniciar sesión. Revisa tu bandeja de entrada.");
+        }
+        
         // Verificar que el usuario esté activo
         if (!user.getActivo()) {
             throw new IllegalArgumentException("Usuario inactivo. Contacte al administrador");
