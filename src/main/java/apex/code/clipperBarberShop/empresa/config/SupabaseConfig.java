@@ -37,4 +37,18 @@ public class SupabaseConfig {
     public RestTemplate restTemplate() {
         return new RestTemplate();
     }
+    
+    /**
+     * Obtiene el bucket de servicios
+     */
+    public String getServicesBucket() {
+        return storage.getBucket().getServicios();
+    }
+    
+    /**
+     * Obtiene el bucket de empresas
+     */
+    public String getEmpresasBucket() {
+        return storage.getBucket().getEmpresas();
+    }
 }

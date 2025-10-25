@@ -33,4 +33,13 @@ public interface StoragePort {
      * @return URL pública del archivo
      */
     String getPublicUrl(String bucket, String path);
+    
+    /**
+     * Sube una imagen de servicio al bucket de servicios
+     * 
+     * @param fileName Nombre del archivo
+     * @param file Archivo de imagen a subir
+     * @return URL pública de la imagen subida
+     */
+    String uploadServiceImage(String fileName, MultipartFile file);
 }

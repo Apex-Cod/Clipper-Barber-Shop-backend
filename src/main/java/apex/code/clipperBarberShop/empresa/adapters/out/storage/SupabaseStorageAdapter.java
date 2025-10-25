@@ -79,6 +79,14 @@ public class SupabaseStorageAdapter implements StoragePort {
             supabaseConfig.getUrl(), bucket, path);
     }
     
+    @Override
+    public String uploadServiceImage(String fileName, MultipartFile file) {
+        validateImageFile(file);
+        String servicesBucket = supabaseConfig.getServicesBucket();
+        String path = "servicios/" + fileName;
+        return uploadFile(servicesBucket, path, file);
+    }
+    
     /**
      * Genera un nombre único para el archivo
      */
