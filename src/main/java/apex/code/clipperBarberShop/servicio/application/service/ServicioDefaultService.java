@@ -23,10 +23,10 @@ public class ServicioDefaultService {
 
     private final ServicioRepositoryPort servicioRepository;
 
-    @Value("${supabase.storage.url}")
-    private String supabaseStorageUrl;
+    @Value("${supabase.url}")
+    private String supabaseUrl;
 
-    @Value("${supabase.storage.buckets.services:Barber-Services}")
+    @Value("${supabase.storage.bucket.servicios:Barber-Services}")
     private String servicesBucket;
 
     /**
