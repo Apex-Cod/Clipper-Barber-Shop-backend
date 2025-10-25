@@ -2,29 +2,83 @@
 
 This repository contains the backend for Clipper Barber Shop — a Spring Boot application providing multi-tenant SaaS features for barber shops (companies), user management, bookings, availability, promotions and more.
 
-Quick summary
+## 🚀 Quick Start
+
+### Prerequisites
+- Java 17+
+- Maven 3.6+
+- PostgreSQL 12+
+- Supabase account (for image storage)
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/Apex-Cod/Clipper-Barber-Shop-backend.git
+cd Clipper-Barber-Shop-backend
+```
+
+### 2. Configure Environment Variables
+```bash
+# Copy the example environment file
+cp .env.example .env
+
+# Edit .env with your actual values
+nano .env
+```
+
+**Required variables:**
+- Database: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`
+- JWT: `JWT_SECRET` (use a strong random key in production)
+- Email: `MAIL_USERNAME`, `MAIL_PASSWORD` (Gmail App Password)
+- Supabase: `SUPABASE_URL`, `SUPABASE_API_KEY` (service_role key)
+
+See [ENV-SETUP.md](ENV-SETUP.md) for detailed configuration guide.
+
+### 3. Setup Database
+```bash
+# Create database
+createdb clipperdb
+
+# Run initialization scripts (optional)
+psql -d clipperdb -f init/clipper-barberShop.sql
+```
+
+### 4. Run the application
+```bash
+./mvnw spring-boot:run
+```
+
+The API will be available at `http://localhost:8080`
+
+## 📋 Quick Summary
 - Java 17, Spring Boot 3.5.x (Jakarta namespace)
 - Spring Data JPA + PostgreSQL
 - Hexagonal architecture (ports & adapters)
 - JWT-based authentication; users stored in DB and used by Spring Security
 - Standardized JSON responses using a shared ApiResponse: { status, mensaje, data }
+- Multi-bucket Supabase Storage integration for images
 
-Repository structure (high level)
+## 📁 Repository Structure (High Level)
 
 ```
 clipperBarberShop/
 ├─ pom.xml
+├─ .env.example          # Environment variables template
+├─ ENV-SETUP.md          # Environment configuration guide
+├─ SUPABASE-SETUP.md     # Supabase configuration guide
 ├─ src/main/java/apex/code/clipperBarberShop/
 │  ├─ ClipperBarberShopApplication.java
 │  ├─ SecurityConfig.java
 │  ├─ auth/             # Authentication module (login, JWT, security)
-│  ├─ registro/         # Registration module (company/user registration)
-│  ├─ shared/           # shared helpers (ApiResponse, exception handler)
+│  ├─ register/         # Registration module (company/user registration)
+│  ├─ empresa/          # Company configuration & image management
+│  ├─ servicio/         # Services module (CRUD by role)
+│  ├─ reserva/          # Reservations module (booking system)
+│  ├─ shared/           # Shared helpers (ApiResponse, exception handler)
 │  ├─ Entities/         # JPA entities for database tables
-│  └─ adapters/in/web   # sample controllers (TestController)
+│  └─ adapters/in/web   # REST controllers
 └─ src/main/resources/
-   ├─ application.properties
-   └─ init/             # SQL init scripts
+   ├─ application.properties  # Uses environment variables
+   └─ init/                   # SQL init scripts
 ```
 
 Architecture and important behavior
