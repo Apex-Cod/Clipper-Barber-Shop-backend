@@ -1,5 +1,6 @@
 package apex.code.clipperBarberShop.register.application.dto;
 
+import apex.code.clipperBarberShop.Entities.enums.PublicoObjetivo;
 import apex.code.clipperBarberShop.shared.validation.ValidPassword;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -19,6 +20,9 @@ public class RegistroRequest {
     @Email(message = "El email de la empresa debe ser válido")
     @Size(max = 100, message = "El email de la empresa no puede exceder 100 caracteres")
     private String empresaEmail;
+    
+    @NotNull(message = "El público objetivo es obligatorio")
+    private PublicoObjetivo empresaPublicoObjetivo;
     
     @NotBlank(message = "El nombre del administrador es obligatorio")
     @Size(min = 2, max = 50, message = "El nombre del administrador debe tener entre 2 y 50 caracteres")
