@@ -8,6 +8,7 @@ import apex.code.clipperBarberShop.register.application.dto.RegistroRequest;
 import apex.code.clipperBarberShop.register.application.service.RegistroService;
 import apex.code.clipperBarberShop.register.domain.port.out.EmpresaRepositoryPort;
 import apex.code.clipperBarberShop.register.domain.port.out.UsuarioRepositoryPort;
+import apex.code.clipperBarberShop.servicio.application.service.ServicioDefaultService;
 import apex.code.clipperBarberShop.shared.email.EmailService;
 import apex.code.clipperBarberShop.shared.util.VerificationCodeGenerator;
 import jakarta.transaction.Transactional;
@@ -28,6 +29,7 @@ public class RegistroServiceImpl implements RegistroService {
     private final UsuarioRepositoryPort usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final ServicioDefaultService servicioDefaultService;
     
     @Value("${app.verification.use-code:true}")
     private boolean useVerificationCode;
@@ -53,9 +55,19 @@ public class RegistroServiceImpl implements RegistroService {
         Empresa empresa = Empresa.builder()
                 .nombre(empresaNombre)
                 .email(empresaEmail)
+                .publicoObjetivo(request.getEmpresaPublicoObjetivo())
                 .build();
 
         empresa = empresaRepository.save(empresa);
+        
+        // Crear servicios por defecto según el público objetivo
+        try {
+            servicioDefaultService.crearServiciosPorDefecto(empresa);
+            log.info("Servicios por defecto creados para empresa: {}", empresa.getNombre());
+        } catch (Exception e) {
+            log.error("Error al crear servicios por defecto para empresa: {}", empresa.getNombre(), e);
+            // No lanzamos excepción para no bloquear el registro
+        }
 
         // Generar token de verificación (código de 6 dígitos o UUID según configuración)
         String verificationToken = useVerificationCode ? 

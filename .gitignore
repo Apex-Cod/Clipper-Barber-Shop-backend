@@ -34,3 +34,14 @@ build/
 
 ### logs ###
 *.log
+
+### Environment Variables ###
+# Ignorar archivo .env con valores reales
+.env
+.env.local
+.env.*.local
+
+# Mantener plantillas y ejemplos en git
+# .env.example (incluido en git)
+# .env.dev (incluido en git)
+# .env.prod (incluido en git)
