@@ -45,10 +45,25 @@ public class Usuario extends SoftDeletableEntity {
     @Builder.Default
     private Boolean activo = true; // Indica si el usuario está activo (puede usar el sistema)
 
+    @Column(name = "email_verified", nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private Boolean emailVerified = false; // Indica si el email ha sido verificado
+    
+    @Column(name = "verification_token", length = 255)
+    private String verificationToken; // Token para verificar el email (UUID para web o código de 6 dígitos para móvil)
+    
+    @Column(name = "verification_token_expiry")
+    private LocalDateTime verificationTokenExpiry; // Fecha de expiración del token
+    
+    @Column(name = "verification_attempts", columnDefinition = "integer default 0")
+    @Builder.Default
+    private Integer verificationAttempts = 0; // Número de intentos de verificación fallidos
+
     @PrePersist
     public void prePersist(){
         if(this.registrationDate == null) this.registrationDate = LocalDateTime.now();
         if(this.getDeleted() == null) this.setDeleted(false);
         if(this.activo == null) this.activo = true;
+        if(this.emailVerified == null) this.emailVerified = false;
     }
 }

@@ -23,12 +23,20 @@ public class AuthService implements AuthUseCase {
 
     @Override
     public AuthResponse authenticateUser(AuthRequest request) {
-        Usuario user = userRepository.findByEmail(request.getEmail())
+        // Normalizar email a minúsculas según RFC 5321/5322 (best practice)
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+        
+        Usuario user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
         // Verificar que el usuario no esté eliminado
         if (user.getDeleted()) {
             throw new IllegalArgumentException("Usuario no encontrado o inactivo");
+        }
+        
+        // Verificar que el email esté verificado
+        if (!user.getEmailVerified()) {
+            throw new IllegalArgumentException("Debes verificar tu email antes de iniciar sesión. Revisa tu bandeja de entrada.");
         }
         
         // Verificar que el usuario esté activo

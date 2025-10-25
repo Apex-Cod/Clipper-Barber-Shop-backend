@@ -2,6 +2,7 @@ package apex.code.clipperBarberShop.register.adapters.out.persistence;
 
 import apex.code.clipperBarberShop.Entities.Usuario;
 import apex.code.clipperBarberShop.register.domain.port.out.UsuarioRepositoryPort;
+import apex.code.clipperBarberShop.register.domain.port.out.EmailVerificationRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -9,7 +10,7 @@ import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
-public class UsuarioPersistenceAdapter implements UsuarioRepositoryPort {
+public class UsuarioPersistenceAdapter implements UsuarioRepositoryPort, EmailVerificationRepositoryPort {
 
     private final SpringDataUsuarioRepository repo;
 
@@ -26,5 +27,10 @@ public class UsuarioPersistenceAdapter implements UsuarioRepositoryPort {
     @Override
     public Optional<Usuario> findByEmail(String email) {
         return repo.findByEmail(email);
+    }
+    
+    @Override
+    public Optional<Usuario> findByVerificationToken(String token) {
+        return repo.findByVerificationToken(token);
     }
 }
