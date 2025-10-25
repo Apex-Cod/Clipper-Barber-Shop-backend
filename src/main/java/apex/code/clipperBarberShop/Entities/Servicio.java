@@ -41,6 +41,10 @@ public class Servicio extends SoftDeletableEntity {
     @Builder.Default
     private PublicoObjetivo publicoObjetivo = PublicoObjetivo.UNISEX; // Público al que está dirigido
 
+    // Campo de imagen (Supabase Storage - Bucket: Barber-Services)
+    @Column(name = "image_url", length = 500)
+    private String imageUrl; // URL de la imagen del servicio en Supabase
+
     @Deprecated // Usar el campo 'deleted' de SoftDeletableEntity
     private Boolean activo;
     
