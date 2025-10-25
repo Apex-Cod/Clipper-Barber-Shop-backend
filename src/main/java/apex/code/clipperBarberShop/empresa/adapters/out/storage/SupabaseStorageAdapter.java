@@ -1,9 +1,9 @@
 package apex.code.clipperBarberShop.empresa.adapters.out.storage;
 
+import apex.code.clipperBarberShop.empresa.config.SupabaseConfig;
 import apex.code.clipperBarberShop.empresa.domain.port.out.StoragePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -21,23 +21,16 @@ import java.util.UUID;
 public class SupabaseStorageAdapter implements StoragePort {
     
     private final RestTemplate restTemplate;
-    
-    @Value("${supabase.url}")
-    private String supabaseUrl;
-    
-    @Value("${supabase.api-key}")
-    private String supabaseApiKey;
-    
-    @Value("${supabase.storage.bucket}")
-    private String defaultBucket;
+    private final SupabaseConfig supabaseConfig;
     
     @Override
     public String uploadFile(String bucket, String path, MultipartFile file) {
         try {
-            String url = String.format("%s/storage/v1/object/%s/%s", supabaseUrl, bucket, path);
+            String url = String.format("%s/storage/v1/object/%s/%s", 
+                supabaseConfig.getUrl(), bucket, path);
             
             HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "Bearer " + supabaseApiKey);
+            headers.set("Authorization", "Bearer " + supabaseConfig.getApiKey());
             headers.setContentType(MediaType.parseMediaType(file.getContentType()));
             
             HttpEntity<byte[]> entity = new HttpEntity<>(file.getBytes(), headers);
@@ -64,10 +57,11 @@ public class SupabaseStorageAdapter implements StoragePort {
     @Override
     public void deleteFile(String bucket, String path) {
         try {
-            String url = String.format("%s/storage/v1/object/%s/%s", supabaseUrl, bucket, path);
+            String url = String.format("%s/storage/v1/object/%s/%s", 
+                supabaseConfig.getUrl(), bucket, path);
             
             HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "Bearer " + supabaseApiKey);
+            headers.set("Authorization", "Bearer " + supabaseConfig.getApiKey());
             
             HttpEntity<Void> entity = new HttpEntity<>(headers);
             
@@ -81,7 +75,8 @@ public class SupabaseStorageAdapter implements StoragePort {
     
     @Override
     public String getPublicUrl(String bucket, String path) {
-        return String.format("%s/storage/v1/object/public/%s/%s", supabaseUrl, bucket, path);
+        return String.format("%s/storage/v1/object/public/%s/%s", 
+            supabaseConfig.getUrl(), bucket, path);
     }
     
     /**

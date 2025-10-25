@@ -5,6 +5,7 @@ import apex.code.clipperBarberShop.Entities.Usuario;
 import apex.code.clipperBarberShop.Entities.enums.PublicoObjetivo;
 import apex.code.clipperBarberShop.empresa.adapters.out.storage.SupabaseStorageAdapter;
 import apex.code.clipperBarberShop.empresa.application.dto.*;
+import apex.code.clipperBarberShop.empresa.config.SupabaseConfig;
 import apex.code.clipperBarberShop.empresa.domain.port.in.EmpresaConfigUseCase;
 import apex.code.clipperBarberShop.empresa.domain.port.out.StoragePort;
 import apex.code.clipperBarberShop.register.domain.port.out.EmpresaRepositoryPort;
@@ -12,7 +13,6 @@ import apex.code.clipperBarberShop.shared.util.StringUtils;
 import apex.code.clipperBarberShop.user.domain.port.out.UserRepositoryPort;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,9 +27,7 @@ public class EmpresaConfigService implements EmpresaConfigUseCase {
     private final UserRepositoryPort userRepository;
     private final StoragePort storagePort;
     private final SupabaseStorageAdapter supabaseAdapter;
-    
-    @Value("${supabase.storage.bucket}")
-    private String bucket;
+    private final SupabaseConfig supabaseConfig;
     
     /**
      * Obtiene la empresa del usuario OWNER autenticado
@@ -121,7 +119,8 @@ public class EmpresaConfigService implements EmpresaConfigUseCase {
         // Eliminar logo anterior si existe
         if (empresa.getLogoPath() != null) {
             try {
-                storagePort.deleteFile(bucket, empresa.getLogoPath());
+                storagePort.deleteFile(supabaseConfig.getStorage().getBucket().getEmpresas(), 
+                    empresa.getLogoPath());
             } catch (Exception e) {
                 // Log error pero continuar
             }
@@ -132,7 +131,8 @@ public class EmpresaConfigService implements EmpresaConfigUseCase {
         String path = String.format("empresas/%d/logo/%s", empresa.getId(), fileName);
         
         // Subir archivo
-        String url = storagePort.uploadFile(bucket, path, archivo);
+        String url = storagePort.uploadFile(
+            supabaseConfig.getStorage().getBucket().getEmpresas(), path, archivo);
         
         // Actualizar empresa
         empresa.setLogoUrl(url);
@@ -153,7 +153,8 @@ public class EmpresaConfigService implements EmpresaConfigUseCase {
         // Eliminar banner anterior si existe
         if (empresa.getBannerPath() != null) {
             try {
-                storagePort.deleteFile(bucket, empresa.getBannerPath());
+                storagePort.deleteFile(supabaseConfig.getStorage().getBucket().getEmpresas(), 
+                    empresa.getBannerPath());
             } catch (Exception e) {
                 // Log error pero continuar
             }
@@ -164,7 +165,8 @@ public class EmpresaConfigService implements EmpresaConfigUseCase {
         String path = String.format("empresas/%d/banner/%s", empresa.getId(), fileName);
         
         // Subir archivo
-        String url = storagePort.uploadFile(bucket, path, archivo);
+        String url = storagePort.uploadFile(
+            supabaseConfig.getStorage().getBucket().getEmpresas(), path, archivo);
         
         // Actualizar empresa
         empresa.setBannerUrl(url);
@@ -180,7 +182,8 @@ public class EmpresaConfigService implements EmpresaConfigUseCase {
         Empresa empresa = obtenerEmpresaDelUsuario(userId);
         
         if (empresa.getLogoPath() != null) {
-            storagePort.deleteFile(bucket, empresa.getLogoPath());
+            storagePort.deleteFile(supabaseConfig.getStorage().getBucket().getEmpresas(), 
+                empresa.getLogoPath());
             empresa.setLogoUrl(null);
             empresa.setLogoPath(null);
             empresaRepository.save(empresa);
@@ -193,7 +196,8 @@ public class EmpresaConfigService implements EmpresaConfigUseCase {
         Empresa empresa = obtenerEmpresaDelUsuario(userId);
         
         if (empresa.getBannerPath() != null) {
-            storagePort.deleteFile(bucket, empresa.getBannerPath());
+            storagePort.deleteFile(supabaseConfig.getStorage().getBucket().getEmpresas(), 
+                empresa.getBannerPath());
             empresa.setBannerUrl(null);
             empresa.setBannerPath(null);
             empresaRepository.save(empresa);
