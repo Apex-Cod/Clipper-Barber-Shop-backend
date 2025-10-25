@@ -65,14 +65,18 @@ clipperBarberShop/
 ├─ .env.example          # Environment variables template
 ├─ ENV-SETUP.md          # Environment configuration guide
 ├─ SUPABASE-SETUP.md     # Supabase configuration guide
+├─ SERVICIOS-DEFAULT.md  # Default services on company registration
+├─ SERVICIOS-RESERVAS.md # Services and reservations API documentation
+├─ PROMOCIONES.md        # Promotions system documentation
 ├─ src/main/java/apex/code/clipperBarberShop/
 │  ├─ ClipperBarberShopApplication.java
 │  ├─ SecurityConfig.java
 │  ├─ auth/             # Authentication module (login, JWT, security)
 │  ├─ register/         # Registration module (company/user registration)
 │  ├─ empresa/          # Company configuration & image management
-│  ├─ servicio/         # Services module (CRUD by role)
+│  ├─ servicio/         # Services module (CRUD by role, default services)
 │  ├─ reserva/          # Reservations module (booking system)
+│  ├─ promocion/        # Promotions module (discounts and offers)
 │  ├─ shared/           # Shared helpers (ApiResponse, exception handler)
 │  ├─ Entities/         # JPA entities for database tables
 │  └─ adapters/in/web   # REST controllers
@@ -81,7 +85,69 @@ clipperBarberShop/
    └─ init/                   # SQL init scripts
 ```
 
-Architecture and important behavior
+## 🎯 Features
+
+### 🔐 Authentication & Authorization
+- JWT-based authentication with role-based access control (OWNER, EMPLOYEE, CLIENT)
+- Email verification system with 6-digit codes
+- Password reset functionality
+- Secure user registration with input validation
+
+### 🏢 Multi-Tenant Company Management
+- Companies with geolocation and business hours
+- Image management with Supabase Storage (logos and banners)
+- Social media integration
+- **Public objective targeting** (Men, Women, Unisex, Kids)
+
+### 💈 Services Module
+- **Role-based CRUD**: OWNER full control, CLIENT read-only
+- **Default services**: Auto-created on company registration based on target audience
+  - 4 services for Men (barber services)
+  - 5 services for Women (salon services)
+  - 5 services for Unisex (general services)
+  - 3 services for Kids (children services)
+- Image support via Supabase Storage
+- Service pricing and duration management
+- See [SERVICIOS-DEFAULT.md](SERVICIOS-DEFAULT.md) for details
+
+### 📅 Reservations System
+- Client booking with conflict detection
+- Business hours validation
+- Reservation status management (PENDING, CONFIRMED, COMPLETED, CANCELLED, RESCHEDULED)
+- Price calculation with promotion support
+- See [SERVICIOS-RESERVAS.md](SERVICIOS-RESERVAS.md) for API documentation
+
+### 🎁 Promotions Module
+- **OWNER-only management**: Full CRUD operations
+- Two discount types: Percentage or Fixed Amount
+- Validity period with date ranges
+- Usage limits and tracking
+- Service-specific or general promotions
+- Minimum amount requirements
+- Automatic price calculation in reservations
+- See [PROMOCIONES.md](PROMOCIONES.md) for complete documentation
+
+### 📧 Email System
+- Verification emails with codes
+- Welcome emails
+- Password reset emails
+- Gmail SMTP integration
+
+### 🗄️ Data Management
+- Soft delete pattern across all entities
+- Input sanitization and validation
+- Standardized API responses
+- Comprehensive error handling
+
+## 📚 Documentation
+
+- **[ENV-SETUP.md](ENV-SETUP.md)** - Complete environment configuration guide
+- **[SUPABASE-SETUP.md](SUPABASE-SETUP.md)** - Supabase Storage setup for images
+- **[SERVICIOS-DEFAULT.md](SERVICIOS-DEFAULT.md)** - Default services on registration
+- **[SERVICIOS-RESERVAS.md](SERVICIOS-RESERVAS.md)** - Services & reservations API
+- **[PROMOCIONES.md](PROMOCIONES.md)** - Promotions system documentation
+
+## Architecture and important behavior
 - Hexagonal (Ports & Adapters): business logic (application/domain) is decoupled from infrastructure.
 - All REST controllers return a standard JSON envelope: ApiResponse { status, mensaje, data }.
 - Passwords are hashed with BCrypt (via Spring's PasswordEncoder) before storing.
