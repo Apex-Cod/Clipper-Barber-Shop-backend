@@ -5,14 +5,17 @@ import apex.code.clipperBarberShop.servicio.application.dto.ServicioRequest;
 import apex.code.clipperBarberShop.servicio.application.dto.ServicioResponse;
 import apex.code.clipperBarberShop.servicio.application.service.ServicioOwnerService;
 import apex.code.clipperBarberShop.shared.ApiResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
 import java.util.List;
@@ -27,30 +30,56 @@ import java.util.List;
 public class ServicioOwnerController {
     
     private final ServicioOwnerService servicioOwnerService;
+    private final ObjectMapper objectMapper;
     
     /**
-     * Crea un nuevo servicio
+     * Crea un nuevo servicio con imagen opcional
+     * Acepta multipart/form-data con campos:
+     * - servicioData: JSON con los datos del servicio
+     * - image: Archivo de imagen (opcional)
      */
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<ServicioResponse>> crearServicio(
-            @Valid @RequestBody ServicioRequest request,
+            @RequestParam("servicioData") String servicioDataJson,
+            @RequestParam(value = "image", required = false) MultipartFile image,
             Principal principal) {
-        ServicioResponse servicio = servicioOwnerService.crearServicio(request, principal.getName());
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Servicio creado exitosamente", servicio));
+        try {
+            // Parsear JSON a objeto
+            ServicioRequest request = objectMapper.readValue(servicioDataJson, ServicioRequest.class);
+            
+            // Crear servicio con imagen opcional
+            ServicioResponse servicio = servicioOwnerService.crearServicio(request, image, principal.getName());
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(ApiResponse.success("Servicio creado exitosamente", servicio));
+        } catch (Exception e) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(ApiResponse.error("Error al procesar los datos del servicio: " + e.getMessage(), null));
+        }
     }
     
     /**
-     * Actualiza un servicio existente
+     * Actualiza un servicio existente con imagen opcional
+     * Acepta multipart/form-data con campos:
+     * - servicioData: JSON con los datos del servicio
+     * - image: Archivo de imagen (opcional)
      */
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<ServicioResponse>> actualizarServicio(
             @PathVariable Long id,
-            @Valid @RequestBody ActualizarServicioRequest request,
+            @RequestParam("servicioData") String servicioDataJson,
+            @RequestParam(value = "image", required = false) MultipartFile image,
             Principal principal) {
-        ServicioResponse servicio = servicioOwnerService.actualizarServicio(id, request, principal.getName());
-        return ResponseEntity.ok(ApiResponse.success("Servicio actualizado exitosamente", servicio));
+        try {
+            ActualizarServicioRequest request = objectMapper.readValue(servicioDataJson, ActualizarServicioRequest.class);
+            ServicioResponse servicio = servicioOwnerService.actualizarServicio(id, request, image, principal.getName());
+            return ResponseEntity.ok(ApiResponse.success("Servicio actualizado exitosamente", servicio));
+        } catch (Exception e) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(ApiResponse.error("Error al procesar los datos del servicio: " + e.getMessage(), null));
+        }
     }
     
     /**
