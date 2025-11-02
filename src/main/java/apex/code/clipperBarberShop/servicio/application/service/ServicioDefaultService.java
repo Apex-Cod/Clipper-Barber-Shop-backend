@@ -194,6 +194,6 @@ public class ServicioDefaultService {
      */
     private String buildImageUrl(String fileName) {
         return String.format("%s/storage/v1/object/public/%s/defaults/%s", 
-                           supabaseStorageUrl, servicesBucket, fileName);
+                           supabaseUrl, servicesBucket, fileName);
     }
 }
