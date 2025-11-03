@@ -51,7 +51,9 @@ public class SecurityConfig {
                         "/api/registro/verify-code",      // Verificación manual (POST)
                         "/api/registro/resend-verification", // Reenviar email
                         "/api/test/public",
-                        "/actuator/**"
+                        "/api/test/websocket/**",         // WebSocket test endpoints
+                        "/actuator/**",
+                        "/ws/**"                          // WebSocket endpoint
                 ).permitAll()
                 .requestMatchers("/api/registro/empleado").hasRole("OWNER")
                 .requestMatchers("/api/test/client-only").hasRole("CLIENT")
