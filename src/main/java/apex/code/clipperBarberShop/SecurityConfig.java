@@ -50,7 +50,12 @@ public class SecurityConfig {
                         "/api/registro/verify",           // Verificación por enlace/código (GET)
                         "/api/registro/verify-code",      // Verificación manual (POST)
                         "/api/registro/resend-verification", // Reenviar email
+                        "/api/payments/success",          // Callback de éxito de PayPal
+                        "/api/payments/cancel",           // Callback de cancelación de PayPal
+                        "/api/public/**",                 // Endpoints públicos
                         "/api/test/public",
+                        "/ws/**",                         // WebSocket
+                        "/api/test/websocket/**",         // Test WebSocket
                         "/actuator/**"
                 ).permitAll()
                 .requestMatchers("/api/registro/empleado").hasRole("OWNER")
