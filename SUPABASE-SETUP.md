@@ -13,16 +13,30 @@
    - **Region**: Selecciona la región más cercana
 5. Click en "Create new project"
 
-### 2. Crear Bucket de Storage
+### 2. Crear Buckets de Storage
+
+Necesitas crear **DOS buckets** para el proyecto:
+
+#### Bucket 1: clipper-images (Para empresas)
 
 1. En el panel izquierdo, click en **Storage**
 2. Click en **"Create a new bucket"**
 3. Configurar el bucket:
-   - **Name**: `clipper-images` (o el nombre que prefieras)
+   - **Name**: `clipper-images`
    - **Public**: ✅ Marcar como público (para que las imágenes sean accesibles)
    - **File size limit**: 5 MB (opcional)
    - **Allowed MIME types**: `image/jpeg, image/png, image/webp, image/gif`
 4. Click en **"Create bucket"**
+
+#### Bucket 2: Barber-Services (Para servicios)
+
+1. Click en **"Create a new bucket"** nuevamente
+2. Configurar el bucket:
+   - **Name**: `Barber-Services`
+   - **Public**: ✅ Marcar como público
+   - **File size limit**: 5 MB (opcional)
+   - **Allowed MIME types**: `image/jpeg, image/png, image/webp, image/gif`
+3. Click en **"Create bucket"**
 
 ### 3. Configurar Políticas de Acceso (RLS - Row Level Security)
 
@@ -34,36 +48,50 @@ Si usas el **service_role key** en tu backend, NO necesitas configurar política
 
 #### Opción B: Usar Anon Key con Políticas RLS
 
-Si prefieres usar el **anon key**, necesitas configurar estas políticas:
+Si prefieres usar el **anon key**, necesitas configurar estas políticas para **AMBOS buckets**:
 
-##### Para permitir subida de archivos:
+##### Políticas para clipper-images (Empresas):
 
 ```sql
 -- Política para INSERT (subir archivos)
-CREATE POLICY "Permitir subida de imágenes autenticadas"
+CREATE POLICY "Permitir subida de imágenes empresas"
 ON storage.objects FOR INSERT
 TO authenticated
 WITH CHECK (bucket_id = 'clipper-images');
-```
 
-##### Para permitir lectura pública:
-
-```sql
 -- Política para SELECT (leer archivos públicamente)
-CREATE POLICY "Permitir lectura pública de imágenes"
+CREATE POLICY "Permitir lectura pública de imágenes empresas"
 ON storage.objects FOR SELECT
 TO public
 USING (bucket_id = 'clipper-images');
-```
 
-##### Para permitir eliminación:
-
-```sql
 -- Política para DELETE (eliminar archivos)
-CREATE POLICY "Permitir eliminación de imágenes autenticadas"
+CREATE POLICY "Permitir eliminación de imágenes empresas"
 ON storage.objects FOR DELETE
 TO authenticated
 USING (bucket_id = 'clipper-images');
+```
+
+##### Políticas para Barber-Services (Servicios):
+
+```sql
+-- Política para INSERT (subir archivos)
+CREATE POLICY "Permitir subida de imágenes servicios"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (bucket_id = 'Barber-Services');
+
+-- Política para SELECT (leer archivos públicamente)
+CREATE POLICY "Permitir lectura pública de imágenes servicios"
+ON storage.objects FOR SELECT
+TO public
+USING (bucket_id = 'Barber-Services');
+
+-- Política para DELETE (eliminar archivos)
+CREATE POLICY "Permitir eliminación de imágenes servicios"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (bucket_id = 'Barber-Services');
 ```
 
 **Nota**: Estas políticas se configuran en **Storage** > **Policies** > **New policy**
@@ -96,7 +124,10 @@ supabase.url=https://tuproyecto.supabase.co
 # IMPORTANTE: Usa service_role key (no anon key) para operaciones backend
 # El service_role key bypasea las políticas RLS
 supabase.api-key=tu-service-role-key-aqui
-supabase.storage.bucket=clipper-images
+
+# Buckets de Storage
+supabase.storage.bucket.empresas=clipper-images
+supabase.storage.bucket.servicios=Barber-Services
 ```
 
 **⚠️ IMPORTANTE**: 
@@ -113,7 +144,7 @@ supabase.storage.bucket=clipper-images
 #### Estructura de carpetas recomendada:
 
 ```
-clipper-images/
+clipper-images/                    (Bucket para empresas)
 ├── empresas/
 │   ├── 1/
 │   │   ├── logo/
@@ -123,6 +154,13 @@ clipper-images/
 │   ├── 2/
 │   │   ├── logo/
 │   │   └── banner/
+
+Barber-Services/                   (Bucket para servicios)
+├── servicios/
+│   ├── 1/
+│   │   └── uuid.jpg
+│   ├── 2/
+│   │   └── uuid.jpg
 ```
 
 #### Límites de tamaño por tipo de imagen:
