@@ -93,6 +93,11 @@ public class Empresa extends SoftDeletableEntity {
     @Column(name = "redes_sociales", length = 1000)
     private String redesSociales; // JSON con redes sociales: {"facebook":"url","instagram":"url","twitter":"url"}
 
+    // Relación con Plan (el plan de suscripción de la empresa)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "plan_id")
+    private Plan plan;
+
     @OneToMany(mappedBy = "empresa", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Usuario> usuarios = new ArrayList<>();
