@@ -1,5 +1,7 @@
 package apex.code.clipperBarberShop.servicio.adapters.in.web;
 
+import apex.code.clipperBarberShop.register.application.dto.EmpresaResponse;
+import apex.code.clipperBarberShop.register.application.service.EmpresaClientService;
 import apex.code.clipperBarberShop.servicio.application.dto.ServicioResponse;
 import apex.code.clipperBarberShop.servicio.application.service.ServicioClientService;
 import apex.code.clipperBarberShop.shared.ApiResponse;
@@ -13,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * Controlador REST para consulta de servicios por parte de CLIENTES
+ * Controlador REST para consulta de servicios y empresas por parte de CLIENTES
  * Solo tiene endpoints de lectura
  */
 @RestController
@@ -23,6 +25,38 @@ import java.util.List;
 public class ServicioClientController {
     
     private final ServicioClientService servicioClientService;
+    private final EmpresaClientService empresaClientService;
+    
+    // ==================== ENDPOINTS DE EMPRESAS ====================
+    
+    /**
+     * Lista todas las empresas activas
+     */
+    @GetMapping("/empresas")
+    public ResponseEntity<ApiResponse<List<EmpresaResponse>>> listarEmpresas() {
+        List<EmpresaResponse> empresas = empresaClientService.listarEmpresas();
+        return ResponseEntity.ok(ApiResponse.success("Empresas obtenidas", empresas));
+    }
+    
+    /**
+     * Lista todas las empresas activas con paginación
+     */
+    @GetMapping("/empresas/paginadas")
+    public ResponseEntity<ApiResponse<Page<EmpresaResponse>>> listarEmpresasPaginadas(Pageable pageable) {
+        Page<EmpresaResponse> empresas = empresaClientService.listarEmpresasPaginadas(pageable);
+        return ResponseEntity.ok(ApiResponse.success("Empresas obtenidas", empresas));
+    }
+    
+    /**
+     * Obtiene una empresa por su ID
+     */
+    @GetMapping("/empresas/{id}")
+    public ResponseEntity<ApiResponse<EmpresaResponse>> obtenerEmpresa(@PathVariable Long id) {
+        EmpresaResponse empresa = empresaClientService.obtenerEmpresaPorId(id);
+        return ResponseEntity.ok(ApiResponse.success("Empresa obtenida", empresa));
+    }
+    
+    // ==================== ENDPOINTS DE SERVICIOS ====================
     
     /**
      * Obtiene un servicio por su ID

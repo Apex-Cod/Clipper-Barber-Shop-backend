@@ -53,6 +53,7 @@ public class SecurityConfig {
                         "/api/payments/success",          // Callback de éxito de PayPal
                         "/api/payments/cancel",           // Callback de cancelación de PayPal
                         "/api/public/**",                 // Endpoints públicos
+                        "/api/public/**",                 // Endpoints públicos (reseñas, etc.)
                         "/api/test/public",
                         "/ws/**",                         // WebSocket
                         "/api/test/websocket/**",         // Test WebSocket
@@ -60,6 +61,11 @@ public class SecurityConfig {
                 ).permitAll()
                 .requestMatchers("/api/registro/empleado").hasRole("OWNER")
                 .requestMatchers("/api/test/client-only").hasRole("CLIENT")
+                // Planes: ADMIN para gestión CRUD, OWNER para consulta y suscripción
+                .requestMatchers("/api/admin/planes/**").hasRole("ADMIN")
+                .requestMatchers("/api/owner/planes/**").hasRole("OWNER")
+                // Suscripciones: Solo OWNER puede gestionar suscripciones
+                .requestMatchers("/api/owner/suscripciones/**").hasRole("OWNER")
                 .anyRequest().authenticated()
             );
 
