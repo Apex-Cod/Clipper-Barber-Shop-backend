@@ -1,0 +1,200 @@
+===============================================================================
+🔧 ESPECIFICACIONES TÉCNICAS PARA IMPLEMENTAR ENDPOINT DE EMPLEADOS PÚBLICOS
+===============================================================================
+
+📋 RESUMEN DE LA TAREA
+===============================================================================
+Implementar endpoint para que los CLIENTES puedan ver empleados activos de una empresa
+para poder seleccionarlos al hacer reservas, SIN exponer datos sensibles.
+
+🎯 ENDPOINT REQUERIDO
+===============================================================================
+GET /api/client/servicios/empleados/empresa/{empresaId}
+
+✅ CRITERIOS DE ACEPTACIÓN:
+├── Accesible para rol CLIENT únicamente
+├── Retornar solo empleados ACTIVOS de la empresa especificada
+├── Incluir solo información pública (id, nombre, apellido, activo, empresaId)
+├── NO exponer datos sensibles (email, teléfono, fechas, etc.)
+├── Validar que la empresa existe y está activa
+├── Retornar lista vacía si no hay empleados activos
+└── Seguir el patrón de respuesta estándar ApiResponse
+
+📄 ARCHIVOS YA CREADOS/MODIFICADOS
+===============================================================================
+
+1. ✅ CONTROLADOR - ServicioClientController.java
+   Ruta: /servicio/adapters/in/web/ServicioClientController.java
+   - Endpoint implementado
+   - Anotaciones de seguridad correctas
+   - Documentación incluida
+
+2. ✅ DTO - EmpleadoPublicoDTO.java
+   Ruta: /servicio/application/dto/EmpleadoPublicoDTO.java
+   - Estructura segura (sin datos sensibles)
+   - Documentación de campos
+   - Validaciones apropiadas
+
+🔧 PENDIENTE DE IMPLEMENTAR
+===============================================================================
+
+3. ❌ SERVICIO - ServicioClientService.java
+   Método requerido: listarEmpleadosPublicosPorEmpresa(Long empresaId)
+   
+   Pseudocódigo:
+   ```java
+   public List<EmpleadoPublicoDTO> listarEmpleadosPublicosPorEmpresa(Long empresaId) {
+       // 1. Validar que la empresa existe y está activa
+       // 2. Buscar usuarios con rol EMPLOYEE de esa empresa
+       // 3. Filtrar solo usuarios activos (activo = true)
+       // 4. Mapear a EmpleadoPublicoDTO (solo campos públicos)
+       // 5. Retornar lista
+   }
+   ```
+
+4. ❌ REPOSITORIO/ADAPTER - Usuario repository methods
+   Método requerido en el repositorio de usuarios:
+   ```java
+   List<Usuario> findByEmpresaIdAndRolAndActivoTrue(Long empresaId, String rol);
+   // O similar query que filtre por empresa, rol EMPLOYEE y activo=true
+   ```
+
+5. ❌ MAPPER/CONVERTER
+   Método para convertir Usuario → EmpleadoPublicoDTO:
+   ```java
+   public static EmpleadoPublicoDTO toEmpleadoPublicoDTO(Usuario usuario) {
+       return EmpleadoPublicoDTO.builder()
+           .id(usuario.getId())
+           .nombre(usuario.getNombre())
+           .apellido(usuario.getApellido())
+           .activo(usuario.isActivo())
+           .empresaId(usuario.getEmpresa().getId())
+           .build();
+   }
+   ```
+
+📊 ESTRUCTURA DE RESPUESTA ESPERADA
+===============================================================================
+
+REQUEST:
+GET /api/client/servicios/empleados/empresa/1
+Headers: Authorization: Bearer {client-jwt-token}
+
+RESPONSE EXITOSO (200):
+{
+  "success": true,
+  "message": "Empleados obtenidos",
+  "data": [
+    {
+      "id": "uuid-empleado-1",
+      "nombre": "Carlos",
+      "apellido": "Martínez", 
+      "activo": true,
+      "empresaId": 1
+    },
+    {
+      "id": "uuid-empleado-2",
+      "nombre": "Ana", 
+      "apellido": "López",
+      "activo": true,
+      "empresaId": 1
+    }
+  ]
+}
+
+RESPONSE EMPRESA NO ENCONTRADA (404):
+{
+  "success": false,
+  "message": "Empresa no encontrada",
+  "data": null
+}
+
+RESPONSE SIN EMPLEADOS (200):
+{
+  "success": true,
+  "message": "Empleados obtenidos", 
+  "data": []
+}
+
+🔒 CONSIDERACIONES DE SEGURIDAD
+===============================================================================
+
+✅ DATOS EXPUESTOS (SEGUROS):
+├── id: Identificador único del empleado
+├── nombre: Nombre público
+├── apellido: Apellido público
+├── activo: Estado para saber si puede recibir reservas
+└── empresaId: Para validación/contexto
+
+❌ DATOS NO EXPUESTOS (SENSIBLES):
+├── email: Información personal
+├── teléfono: Información personal
+├── fechaCreacion/fechaModificacion: Metadatos internos
+├── passwordHash: Información crítica de seguridad
+├── tokenVerificacion: Información de sesión
+├── rol: Información interna del sistema
+└── Cualquier otro campo no esencial
+
+🧪 CASOS DE PRUEBA SUGERIDOS
+===============================================================================
+
+1. ✅ Caso exitoso: Cliente autenticado consulta empresa con empleados activos
+2. ✅ Empresa sin empleados: Retorna array vacío
+3. ✅ Empresa con empleados inactivos: No los incluye en respuesta
+4. ❌ Usuario sin rol CLIENT: Retorna 403 Forbidden
+5. ❌ Empresa inexistente: Retorna 404 Not Found
+6. ❌ Token inválido/expirado: Retorna 401 Unauthorized
+7. ✅ Empresa con mix de empleados activos/inactivos: Solo retorna activos
+
+⚡ FLUJO DE IMPLEMENTACIÓN RECOMENDADO
+===============================================================================
+
+PASO 1: Implementar método en repositorio
+├── Crear query para buscar empleados por empresa y activos
+└── Testear consulta directamente
+
+PASO 2: Implementar método en ServicioClientService
+├── Validar empresa existe y está activa
+├── Llamar repositorio con filtros correctos
+├── Mapear entidades a DTOs
+└── Retornar lista
+
+PASO 3: Crear tests unitarios
+├── Test caso exitoso
+├── Test empresa sin empleados
+├── Test empresa inexistente
+└── Test filtrado de empleados inactivos
+
+PASO 4: Crear tests de integración
+├── Test endpoint completo con datos reales
+├── Test autorizaciones (CLIENT vs otros roles)
+└── Test casos límite
+
+🔗 INTEGRACIÓN CON FRONTEND
+===============================================================================
+
+Este endpoint será utilizado por el frontend en:
+├── Pantalla de crear reserva (seleccionar empleado)
+├── Filtros de búsqueda de servicios por empleado
+└── Vista de detalles de empresa (mostrar equipo)
+
+El frontend espera recibir la lista para popular un dropdown/selector
+de empleados disponibles para reservas.
+
+===============================================================================
+📞 CONTACTO PARA DUDAS
+===============================================================================
+
+Si hay dudas sobre la implementación:
+1. Revisar el patrón usado en otros endpoints de ServicioClientService
+2. Seguir la misma estructura de validaciones y mapeo
+3. Mantener consistencia con el resto de la API
+
+===============================================================================
+⏰ PRIORIDAD: ALTA
+===============================================================================
+
+Este endpoint es crítico para el flujo de reservas del cliente.
+Sin él, los clientes no pueden seleccionar empleados específicos al crear reservas.
+
+Estado actual: CONTROLADOR Y DTO LISTOS - FALTA IMPLEMENTAR SERVICIO

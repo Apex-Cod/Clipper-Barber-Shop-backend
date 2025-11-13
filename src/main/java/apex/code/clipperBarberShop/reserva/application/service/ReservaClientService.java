@@ -4,6 +4,7 @@ import apex.code.clipperBarberShop.Entities.Empresa;
 import apex.code.clipperBarberShop.Entities.Reserva;
 import apex.code.clipperBarberShop.Entities.Servicio;
 import apex.code.clipperBarberShop.Entities.Usuario;
+import apex.code.clipperBarberShop.Entities.enums.ReservaStatus;
 import apex.code.clipperBarberShop.register.domain.port.out.UsuarioRepositoryPort;
 import apex.code.clipperBarberShop.reserva.application.dto.*;
 import apex.code.clipperBarberShop.reserva.domain.exception.ReservaAccessDeniedException;
@@ -17,7 +18,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -324,4 +329,42 @@ public class ReservaClientService {
                 .deletedBy(reserva.getDeletedBy())
                 .build();
     }
+
+public List<String> obtenerHorariosOcupados(String empresaId, String fecha, String empleadoId) {
+    LocalDate fechaReserva = LocalDate.parse(fecha);
+    LocalDateTime startOfDay = fechaReserva.atStartOfDay();
+    LocalDateTime endOfDay = fechaReserva.atTime(23, 59, 59);
+    
+    List<String> estadosOcupados = Arrays.asList("PENDING", "CONFIRMED");
+    
+    List<Reserva> reservasOcupadas;
+    
+    if (empleadoId != null && !empleadoId.isEmpty()) {
+        // Filtrar por empleado específico
+        reservasOcupadas = reservaRepository.findByEmpresaIdAndEmployeeIdAndReservationDateBetweenAndStatusIn(
+            Long.parseLong(empresaId), 
+            empleadoId, // employeeId es String, no necesita parseo
+            startOfDay,
+            endOfDay,
+            estadosOcupados
+        );
+    } else {
+        // Todos los empleados de la empresa
+        reservasOcupadas = reservaRepository.findByEmpresaIdAndReservationDateBetweenAndStatusIn(
+            Long.parseLong(empresaId), 
+            startOfDay,
+            endOfDay,
+            estadosOcupados
+        );
+    }
+    
+    return reservasOcupadas.stream()
+        .map(reserva -> {
+            LocalTime horaInicio = reserva.getReservationDate().toLocalTime();
+            return horaInicio.format(DateTimeFormatter.ofPattern("HH:mm"));
+        })
+        .distinct()
+        .sorted()
+        .collect(Collectors.toList());
+}
 }
