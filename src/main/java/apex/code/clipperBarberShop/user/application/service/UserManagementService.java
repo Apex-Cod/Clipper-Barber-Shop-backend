@@ -236,6 +236,11 @@ public class UserManagementService implements UserManagementUseCase {
         Usuario solicitante = userRepository.findById(solicitanteId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario solicitante no encontrado"));
         
+        // Cualquier usuario puede acceder a su propio perfil
+        if (solicitante.getId().equals(usuarioObjetivo.getId())) {
+            return;
+        }
+        
         // ADMIN tiene acceso total
         if ("ADMIN".equals(solicitante.getRole())) {
             return;
@@ -260,7 +265,7 @@ public class UserManagementService implements UserManagementUseCase {
             return;
         }
         
-        // Otros roles no tienen acceso
+        // Otros roles no tienen acceso a perfiles de otros usuarios
         throw new IllegalArgumentException("No tiene permisos para realizar esta acción");
     }
     
