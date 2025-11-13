@@ -1,9 +1,14 @@
 package apex.code.clipperBarberShop.servicio.application.service;
 
+import apex.code.clipperBarberShop.Entities.Empresa;
 import apex.code.clipperBarberShop.Entities.Servicio;
+import apex.code.clipperBarberShop.Entities.Usuario;
+import apex.code.clipperBarberShop.register.domain.port.out.EmpresaRepositoryPort;
+import apex.code.clipperBarberShop.servicio.application.dto.EmpleadoPublicoDTO;
 import apex.code.clipperBarberShop.servicio.application.dto.ServicioResponse;
 import apex.code.clipperBarberShop.servicio.domain.exception.ServicioNotFoundException;
 import apex.code.clipperBarberShop.servicio.domain.port.out.ServicioRepositoryPort;
+import apex.code.clipperBarberShop.user.domain.port.out.UserRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +26,8 @@ import java.util.stream.Collectors;
 public class ServicioClientService {
     
     private final ServicioRepositoryPort servicioRepository;
+    private final UserRepositoryPort userRepository;
+    private final EmpresaRepositoryPort empresaRepository;
     
     /**
      * Obtiene un servicio por su ID (solo activos)
@@ -61,6 +68,27 @@ public class ServicioClientService {
     }
     
     /**
+     * Lista empleados activos de una empresa (información pública)
+     * Solo retorna datos públicos sin información sensible
+     */
+    public List<EmpleadoPublicoDTO> listarEmpleadosPublicosPorEmpresa(Long empresaId) {
+        // 1. Validar que la empresa existe y está activa
+        Empresa empresa = empresaRepository.findByIdAndDeletedFalse(empresaId)
+                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada o inactiva: " + empresaId));
+        
+        // 2. Buscar empleados activos de esa empresa
+        List<Usuario> empleados = userRepository.findByEmpresaAndDeletedFalse(empresa)
+                .stream()
+                .filter(usuario -> "EMPLOYEE".equals(usuario.getRole()) && Boolean.TRUE.equals(usuario.getActivo()))
+                .collect(Collectors.toList());
+        
+        // 3. Mapear a DTOs públicos
+        return empleados.stream()
+                .map(this::mapToEmpleadoPublicoDTO)
+                .collect(Collectors.toList());
+    }
+    
+    /**
      * Mapea una entidad Servicio a ServicioResponse
      */
     private ServicioResponse mapToResponse(Servicio servicio) {
@@ -76,6 +104,20 @@ public class ServicioClientService {
                 .publicoObjetivo(servicio.getPublicoObjetivo())
                 .imageUrl(servicio.getImageUrl())
                 .deleted(servicio.getDeleted())
+                .build();
+    }
+    
+    /**
+     * Mapea una entidad Usuario a EmpleadoPublicoDTO
+     * Solo incluye información pública, sin datos sensibles
+     */
+    private EmpleadoPublicoDTO mapToEmpleadoPublicoDTO(Usuario usuario) {
+        return EmpleadoPublicoDTO.builder()
+                .id(usuario.getId())
+                .nombre(usuario.getName())
+                .apellido(usuario.getLastName())
+                .activo(Boolean.TRUE.equals(usuario.getActivo()))
+                .empresaId(usuario.getEmpresa().getId())
                 .build();
     }
 }

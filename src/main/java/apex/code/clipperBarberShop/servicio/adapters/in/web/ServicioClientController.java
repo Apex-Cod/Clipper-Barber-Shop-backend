@@ -2,6 +2,7 @@ package apex.code.clipperBarberShop.servicio.adapters.in.web;
 
 import apex.code.clipperBarberShop.register.application.dto.EmpresaResponse;
 import apex.code.clipperBarberShop.register.application.service.EmpresaClientService;
+import apex.code.clipperBarberShop.servicio.application.dto.EmpleadoPublicoDTO;
 import apex.code.clipperBarberShop.servicio.application.dto.ServicioResponse;
 import apex.code.clipperBarberShop.servicio.application.service.ServicioClientService;
 import apex.code.clipperBarberShop.shared.ApiResponse;
@@ -97,5 +98,19 @@ public class ServicioClientController {
             @PathVariable String categoria) {
         List<ServicioResponse> servicios = servicioClientService.listarServiciosPorCategoria(empresaId, categoria);
         return ResponseEntity.ok(ApiResponse.success("Servicios obtenidos", servicios));
+    }
+    
+    // ==================== ENDPOINTS DE EMPLEADOS ====================
+    
+    /**
+     * Lista empleados activos de una empresa (información pública)
+     * Solo retorna datos públicos: id, nombre, apellido
+     * No expone información sensible como email, teléfono, etc.
+     */
+    @GetMapping("/empleados/empresa/{empresaId}")
+    public ResponseEntity<ApiResponse<List<EmpleadoPublicoDTO>>> listarEmpleadosPorEmpresa(
+            @PathVariable Long empresaId) {
+        List<EmpleadoPublicoDTO> empleados = servicioClientService.listarEmpleadosPublicosPorEmpresa(empresaId);
+        return ResponseEntity.ok(ApiResponse.success("Empleados obtenidos", empleados));
     }
 }
