@@ -261,7 +261,6 @@ public class ReservaOwnerService {
         }
         
         reserva.setStatus("COMPLETED");
-        reserva.setRecordatorioEnviado(false); // ⭐ Reiniciar flag (ya no se necesita)
         Reserva updated = reservaRepository.save(reserva);
         
         // � Enviar email de reserva completada
