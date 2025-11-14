@@ -65,6 +65,28 @@ public class WebSocketNotificationService {
     }
 
     /**
+     * Convierte de forma segura un Object a Long
+     * Maneja casos donde el valor puede ser Integer, Long u otros tipos numéricos
+     */
+    private Long safeLongConversion(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Long) {
+            return (Long) value;
+        }
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        try {
+            return Long.parseLong(value.toString());
+        } catch (NumberFormatException e) {
+            log.warn("No se pudo convertir el valor {} a Long", value, e);
+            return null;
+        }
+    }
+
+    /**
      * Envía una notificación de nueva reserva creada
      * @param empresaId ID de la empresa
      * @param clientId ID del cliente que creó la reserva
@@ -72,17 +94,19 @@ public class WebSocketNotificationService {
      * @param reservaData Datos de la reserva
      */
     public void sendReservaCreada(Long empresaId, String clientId, String employeeId, Map<String, Object> reservaData) {
+        Long reservaId = safeLongConversion(reservaData.get("id"));
+        
         NotificationMessage notification = NotificationMessage.builder()
                 .type(NotificationType.RESERVA_CREADA)
                 .title("Nueva Reserva")
                 .message("Se ha creado una nueva reserva")
                 .resourceType("reserva")
-                .resourceId((Long) reservaData.get("id"))
+                .resourceId(reservaId)
                 .empresaId(empresaId)
                 .priority("HIGH")
                 .requiresAction(true)
                 .data(reservaData)
-                .actionUrl("/reservas/" + reservaData.get("id"))
+                .actionUrl("/reservas/" + reservaId)
                 .build();
 
         // Notificar al cliente que creó la reserva
@@ -94,12 +118,12 @@ public class WebSocketNotificationService {
                 .title("Nueva Reserva Asignada")
                 .message("Se te ha asignado una nueva reserva")
                 .resourceType("reserva")
-                .resourceId((Long) reservaData.get("id"))
+                .resourceId(reservaId)
                 .empresaId(empresaId)
                 .priority("HIGH")
                 .requiresAction(true)
                 .data(reservaData)
-                .actionUrl("/reservas/" + reservaData.get("id"))
+                .actionUrl("/reservas/" + reservaId)
                 .build();
         sendNotificationToUser(employeeId, employeeNotification);
 
@@ -111,16 +135,18 @@ public class WebSocketNotificationService {
      * Envía una notificación de reserva confirmada
      */
     public void sendReservaConfirmada(Long empresaId, String clientId, Map<String, Object> reservaData) {
+        Long reservaId = safeLongConversion(reservaData.get("id"));
+        
         NotificationMessage notification = NotificationMessage.builder()
                 .type(NotificationType.RESERVA_CONFIRMADA)
                 .title("Reserva Confirmada")
                 .message("Tu reserva ha sido confirmada")
                 .resourceType("reserva")
-                .resourceId((Long) reservaData.get("id"))
+                .resourceId(reservaId)
                 .empresaId(empresaId)
                 .priority("HIGH")
                 .data(reservaData)
-                .actionUrl("/reservas/" + reservaData.get("id"))
+                .actionUrl("/reservas/" + reservaId)
                 .build();
 
         sendNotificationToUser(clientId, notification);
@@ -135,16 +161,18 @@ public class WebSocketNotificationService {
      * @param reservaData Datos de la reserva
      */
     public void sendReservaCancelada(Long empresaId, String clientId, String employeeId, Map<String, Object> reservaData) {
+        Long reservaId = safeLongConversion(reservaData.get("id"));
+        
         NotificationMessage notification = NotificationMessage.builder()
                 .type(NotificationType.RESERVA_CANCELADA)
                 .title("Reserva Cancelada")
                 .message("Una reserva ha sido cancelada")
                 .resourceType("reserva")
-                .resourceId((Long) reservaData.get("id"))
+                .resourceId(reservaId)
                 .empresaId(empresaId)
                 .priority("MEDIUM")
                 .data(reservaData)
-                .actionUrl("/reservas/" + reservaData.get("id"))
+                .actionUrl("/reservas/" + reservaId)
                 .build();
 
         sendNotificationToUser(clientId, notification);
@@ -162,17 +190,19 @@ public class WebSocketNotificationService {
      * @param reservaData Datos de la reserva
      */
     public void sendReservaReprogramada(Long empresaId, String clientId, String employeeId, Map<String, Object> reservaData) {
+        Long reservaId = safeLongConversion(reservaData.get("id"));
+        
         NotificationMessage notification = NotificationMessage.builder()
                 .type(NotificationType.RESERVA_REPROGRAMADA)
                 .title("Reserva Reprogramada")
                 .message("Una reserva ha sido reprogramada")
                 .resourceType("reserva")
-                .resourceId((Long) reservaData.get("id"))
+                .resourceId(reservaId)
                 .empresaId(empresaId)
                 .priority("HIGH")
                 .requiresAction(true)
                 .data(reservaData)
-                .actionUrl("/reservas/" + reservaData.get("id"))
+                .actionUrl("/reservas/" + reservaId)
                 .build();
 
         sendNotificationToUser(clientId, notification);
@@ -186,16 +216,18 @@ public class WebSocketNotificationService {
      * Envía una notificación de reserva completada
      */
     public void sendReservaCompletada(Long empresaId, String clientId, Map<String, Object> reservaData) {
+        Long reservaId = safeLongConversion(reservaData.get("id"));
+        
         NotificationMessage notification = NotificationMessage.builder()
                 .type(NotificationType.RESERVA_COMPLETADA)
                 .title("Reserva Completada")
                 .message("Tu reserva ha sido completada")
                 .resourceType("reserva")
-                .resourceId((Long) reservaData.get("id"))
+                .resourceId(reservaId)
                 .empresaId(empresaId)
                 .priority("MEDIUM")
                 .data(reservaData)
-                .actionUrl("/reservas/" + reservaData.get("id"))
+                .actionUrl("/reservas/" + reservaId)
                 .build();
 
         sendNotificationToUser(clientId, notification);
@@ -210,16 +242,18 @@ public class WebSocketNotificationService {
      * @param reservaData Datos de la reserva
      */
     public void sendReservaActualizada(Long empresaId, String clientId, String employeeId, Map<String, Object> reservaData) {
+        Long reservaId = safeLongConversion(reservaData.get("id"));
+        
         NotificationMessage notification = NotificationMessage.builder()
                 .type(NotificationType.RESERVA_ACTUALIZADA)
                 .title("Reserva Actualizada")
                 .message("Una reserva ha sido actualizada")
                 .resourceType("reserva")
-                .resourceId((Long) reservaData.get("id"))
+                .resourceId(reservaId)
                 .empresaId(empresaId)
                 .priority("MEDIUM")
                 .data(reservaData)
-                .actionUrl("/reservas/" + reservaData.get("id"))
+                .actionUrl("/reservas/" + reservaId)
                 .build();
 
         sendNotificationToUser(clientId, notification);
