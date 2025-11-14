@@ -44,6 +44,7 @@ public class ReservaClientService {
     private final UsuarioRepositoryPort usuarioRepository;
     private final ReservaValidationService validationService;
     private final WebSocketNotificationService notificationService;
+    private final apex.code.clipperBarberShop.shared.email.EmailService emailService;
     
     /**
      * Crea una nueva reserva para el cliente
@@ -96,7 +97,26 @@ public class ReservaClientService {
         
         Reserva saved = reservaRepository.save(reserva);
         
-        // 🔔 Enviar notificación WebSocket de reserva creada
+        // � Enviar email de confirmación de reserva
+        try {
+            Usuario empleado = usuarioRepository.findById(saved.getEmployeeId()).orElse(null);
+            String employeeName = empleado != null ? empleado.getName() + " " + empleado.getLastName() : "N/A";
+            
+            emailService.sendReservaConfirmacionEmail(
+                    saved,
+                    cliente.getName() + " " + cliente.getLastName(),
+                    cliente.getEmail(),
+                    employeeName,
+                    servicio.getName(),
+                    empresa.getNombre(),
+                    empresa.getDireccion() != null ? empresa.getDireccion() : "Dirección no disponible"
+            );
+        } catch (Exception e) {
+            // No fallar si el email falla
+            log.error("Error enviando email de confirmación de reserva: {}", e.getMessage(), e);
+        }
+        
+        // �🔔 Enviar notificación WebSocket de reserva creada
         try {
             Usuario empleado = usuarioRepository.findById(saved.getEmployeeId()).orElse(null);
             
@@ -219,9 +239,30 @@ public class ReservaClientService {
         }
         
         reserva.setStatus("CANCELLED");
+        reserva.setRecordatorioEnviado(false); // ⭐ Reiniciar flag (aunque ya no se necesita enviar)
         Reserva saved = reservaRepository.save(reserva);
         
-        // 🔔 Enviar notificación WebSocket de reserva cancelada
+        // � Enviar email de reserva cancelada
+        try {
+            Usuario cliente = usuarioRepository.findById(clientId).orElse(null);
+            if (cliente != null && cliente.getEmail() != null) {
+                emailService.sendReservaCanceladaEmail(
+                        saved,
+                        cliente.getName() + " " + cliente.getLastName(),
+                        cliente.getEmail(),
+                        saved.getService().getName(),
+                        saved.getEmpresa().getNombre(),
+                        request.getMotivo()
+                );
+            }
+        } catch (Exception e) {
+            log.error("Error enviando email de reserva cancelada: {}", e.getMessage(), e);
+        }
+        
+        // �🔔 Enviar notificación WebSocket de reserva cancelada
+
+        
+        // �🔔 Enviar notificación WebSocket de reserva cancelada
         try {
             Usuario cliente = usuarioRepository.findById(clientId).orElse(null);
             Usuario empleado = usuarioRepository.findById(saved.getEmployeeId()).orElse(null);
@@ -278,11 +319,36 @@ public class ReservaClientService {
                 request.getNuevaFecha());
         
         // Actualizar
+        LocalDateTime fechaAnterior = reserva.getReservationDate(); // Guardar fecha anterior
         reserva.setReservationDate(request.getNuevaFecha());
         reserva.setEmployeeId(request.getEmployeeId());
         reserva.setStatus("RESCHEDULED");
+        reserva.setRecordatorioEnviado(false); // ⭐ Reiniciar flag para nueva fecha
         
         Reserva updated = reservaRepository.save(reserva);
+        
+        // 📧 Enviar email de reserva reprogramada
+        try {
+            Usuario cliente = usuarioRepository.findById(clientId).orElse(null);
+            Usuario empleado = usuarioRepository.findById(updated.getEmployeeId()).orElse(null);
+            
+            if (cliente != null && cliente.getEmail() != null && empleado != null) {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+                String fechaAnteriorStr = fechaAnterior.format(formatter);
+                
+                emailService.sendReservaReprogramadaEmail(
+                        updated,
+                        cliente.getName() + " " + cliente.getLastName(),
+                        cliente.getEmail(),
+                        empleado.getName() + " " + empleado.getLastName(),
+                        updated.getService().getName(),
+                        updated.getEmpresa().getNombre(),
+                        fechaAnteriorStr
+                );
+            }
+        } catch (Exception e) {
+            log.error("Error enviando email de reserva reprogramada: {}", e.getMessage(), e);
+        }
         
         // 🔔 Enviar notificación WebSocket de reserva reprogramada
         try {
@@ -326,11 +392,13 @@ public class ReservaClientService {
     }
     
     /**
-     * Lista todas las reservas del cliente
+     * Lista todas las reservas del cliente ordenadas por prioridad de estado y fecha
+     * Orden: PENDING/CONFIRMED/RESCHEDULED primero (más próximas primero), luego COMPLETED, y CANCELLED al final
      */
     public List<ReservaResponse> listarMisReservas(String clientId) {
         return reservaRepository.findByClientIdAndDeletedFalse(clientId)
                 .stream()
+                .sorted(this::compararReservasPorPrioridad)
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -344,11 +412,12 @@ public class ReservaClientService {
     }
     
     /**
-     * Lista reservas del cliente por estado
+     * Lista reservas del cliente por estado ordenadas por fecha más próxima
      */
     public List<ReservaResponse> listarMisReservasPorEstado(String status, String clientId) {
         return reservaRepository.findByClientIdAndStatusAndDeletedFalse(clientId, status)
                 .stream()
+                .sorted((r1, r2) -> r1.getReservationDate().compareTo(r2.getReservationDate()))
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -381,6 +450,57 @@ public class ReservaClientService {
     private void validarAccesoCliente(Reserva reserva, String clientId) {
         if (!reserva.getClientId().equals(clientId)) {
             throw new ReservaAccessDeniedException("No tienes permisos para acceder a esta reserva");
+        }
+    }
+    
+    /**
+     * Comparador personalizado para ordenar reservas por prioridad
+     * Orden: 
+     * 1. Estados activos (PENDING, CONFIRMED, RESCHEDULED) por fecha más próxima
+     * 2. COMPLETED por fecha más reciente
+     * 3. CANCELLED al final por fecha más reciente
+     */
+    private int compararReservasPorPrioridad(Reserva r1, Reserva r2) {
+        int prioridad1 = obtenerPrioridadEstado(r1.getStatus());
+        int prioridad2 = obtenerPrioridadEstado(r2.getStatus());
+        
+        // Primero comparar por prioridad de estado
+        if (prioridad1 != prioridad2) {
+            return Integer.compare(prioridad1, prioridad2);
+        }
+        
+        // Si tienen la misma prioridad, ordenar por fecha
+        // Para estados activos (prioridad 1): fecha más próxima primero
+        // Para completadas y canceladas: más recientes primero
+        if (prioridad1 == 1) {
+            return r1.getReservationDate().compareTo(r2.getReservationDate());
+        } else {
+            return r2.getReservationDate().compareTo(r1.getReservationDate());
+        }
+    }
+    
+    /**
+     * Obtiene la prioridad numérica del estado para ordenamiento
+     * 1 = Activas (PENDING, CONFIRMED, RESCHEDULED)
+     * 2 = Completadas (COMPLETED)
+     * 3 = Canceladas (CANCELLED)
+     */
+    private int obtenerPrioridadEstado(String status) {
+        if (status == null) {
+            return 3;
+        }
+        
+        switch (status) {
+            case "PENDING":
+            case "CONFIRMED":
+            case "RESCHEDULED":
+                return 1;
+            case "COMPLETED":
+                return 2;
+            case "CANCELLED":
+                return 3;
+            default:
+                return 3;
         }
     }
     
