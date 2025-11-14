@@ -87,6 +87,39 @@ public class SupabaseStorageAdapter implements StoragePort {
         return uploadFile(servicesBucket, path, file);
     }
     
+    @Override
+    public String uploadUserProfileImage(String userId, MultipartFile file) {
+        validateImageFile(file);
+        String usersBucket = supabaseConfig.getUsersBucket();
+        String uniqueFileName = generateUniqueFileName(file.getOriginalFilename());
+        String path = "profiles/" + userId + "/" + uniqueFileName;
+        return uploadFile(usersBucket, path, file);
+    }
+    
+    @Override
+    public void deleteUserProfileImage(String userId, String imageUrl) {
+        if (imageUrl == null || imageUrl.isEmpty()) {
+            return;
+        }
+        
+        try {
+            // Extraer el path de la URL
+            // URL formato: {supabaseUrl}/storage/v1/object/public/{bucket}/{path}
+            String usersBucket = supabaseConfig.getUsersBucket();
+            String publicPrefix = supabaseConfig.getUrl() + "/storage/v1/object/public/" + usersBucket + "/";
+            
+            if (imageUrl.startsWith(publicPrefix)) {
+                String path = imageUrl.substring(publicPrefix.length());
+                deleteFile(usersBucket, path);
+            } else {
+                log.warn("URL de imagen no coincide con el formato esperado: {}", imageUrl);
+            }
+        } catch (Exception e) {
+            log.error("Error al eliminar imagen de perfil", e);
+            // No lanzamos excepción para no bloquear otras operaciones
+        }
+    }
+    
     /**
      * Genera un nombre único para el archivo
      */

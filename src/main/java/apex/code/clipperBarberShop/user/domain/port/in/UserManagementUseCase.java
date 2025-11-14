@@ -1,6 +1,7 @@
 package apex.code.clipperBarberShop.user.domain.port.in;
 
 import apex.code.clipperBarberShop.user.application.dto.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -61,4 +62,20 @@ public interface UserManagementUseCase {
      * OWNER: Solo puede restaurar usuarios de su empresa
      */
     UsuarioResponse restaurarUsuario(String userId, String restoredBy);
+    
+    /**
+     * Sube o actualiza la imagen de perfil de un usuario
+     * Cualquier usuario puede actualizar su propia imagen
+     * ADMIN: Puede actualizar la imagen de cualquier usuario
+     * OWNER: Puede actualizar la imagen de usuarios de su empresa
+     */
+    UsuarioResponse subirImagenPerfil(String userId, MultipartFile file, String updatedBy);
+    
+    /**
+     * Elimina la imagen de perfil de un usuario
+     * Cualquier usuario puede eliminar su propia imagen
+     * ADMIN: Puede eliminar la imagen de cualquier usuario
+     * OWNER: Puede eliminar la imagen de usuarios de su empresa
+     */
+    UsuarioResponse eliminarImagenPerfil(String userId, String updatedBy);
 }

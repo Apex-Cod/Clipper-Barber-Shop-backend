@@ -30,6 +30,7 @@ public class SupabaseConfig {
         public static class Bucket {
             private String empresas = "clipper-images";
             private String servicios = "Barber-Services";
+            private String usuarios = "Clipper-User";
         }
     }
     
@@ -50,5 +51,12 @@ public class SupabaseConfig {
      */
     public String getEmpresasBucket() {
         return storage.getBucket().getEmpresas();
+    }
+    
+    /**
+     * Obtiene el bucket de usuarios
+     */
+    public String getUsersBucket() {
+        return storage.getBucket().getUsuarios();
     }
 }

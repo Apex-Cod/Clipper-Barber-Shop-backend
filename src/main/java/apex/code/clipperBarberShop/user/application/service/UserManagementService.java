@@ -2,6 +2,7 @@ package apex.code.clipperBarberShop.user.application.service;
 
 import apex.code.clipperBarberShop.Entities.Empresa;
 import apex.code.clipperBarberShop.Entities.Usuario;
+import apex.code.clipperBarberShop.empresa.domain.port.out.StoragePort;
 import apex.code.clipperBarberShop.register.domain.port.out.EmpresaRepositoryPort;
 import apex.code.clipperBarberShop.shared.util.StringUtils;
 import apex.code.clipperBarberShop.user.application.dto.*;
@@ -11,6 +12,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,6 +27,7 @@ public class UserManagementService implements UserManagementUseCase {
     private final UserRepositoryPort userRepository;
     private final EmpresaRepositoryPort empresaRepository;
     private final PasswordEncoder passwordEncoder;
+    private final StoragePort storagePort;
     
     @Override
     public UsuarioResponse obtenerUsuario(String userId, String requestedBy) {
@@ -227,6 +230,61 @@ public class UserManagementService implements UserManagementUseCase {
         return mapToResponse(usuario);
     }
     
+    @Override
+    @Transactional
+    public UsuarioResponse subirImagenPerfil(String userId, MultipartFile file, String updatedBy) {
+        Usuario usuario = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+        
+        if (usuario.getDeleted()) {
+            throw new IllegalArgumentException("No se puede actualizar la imagen de un usuario eliminado");
+        }
+        
+        // Verificar permisos
+        validarAccesoUsuario(updatedBy, usuario);
+        
+        // Si ya tiene una imagen, eliminarla
+        if (usuario.getProfileImageUrl() != null && !usuario.getProfileImageUrl().isEmpty()) {
+            try {
+                storagePort.deleteUserProfileImage(userId, usuario.getProfileImageUrl());
+            } catch (Exception e) {
+                // Log pero no fallar si no se puede eliminar la imagen antigua
+            }
+        }
+        
+        // Subir la nueva imagen
+        String imageUrl = storagePort.uploadUserProfileImage(userId, file);
+        
+        // Actualizar el usuario
+        usuario.setProfileImageUrl(imageUrl);
+        usuario = userRepository.save(usuario);
+        
+        return mapToResponse(usuario);
+    }
+    
+    @Override
+    @Transactional
+    public UsuarioResponse eliminarImagenPerfil(String userId, String updatedBy) {
+        Usuario usuario = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+        
+        if (usuario.getDeleted()) {
+            throw new IllegalArgumentException("No se puede eliminar la imagen de un usuario eliminado");
+        }
+        
+        // Verificar permisos
+        validarAccesoUsuario(updatedBy, usuario);
+        
+        // Si tiene imagen, eliminarla
+        if (usuario.getProfileImageUrl() != null && !usuario.getProfileImageUrl().isEmpty()) {
+            storagePort.deleteUserProfileImage(userId, usuario.getProfileImageUrl());
+            usuario.setProfileImageUrl(null);
+            usuario = userRepository.save(usuario);
+        }
+        
+        return mapToResponse(usuario);
+    }
+    
     /**
      * Valida que el usuario solicitante tenga acceso al usuario objetivo
      * ADMIN: Acceso total
@@ -316,6 +374,7 @@ public class UserManagementService implements UserManagementUseCase {
                 .deleted(usuario.getDeleted())
                 .deletedAt(usuario.getDeletedAt())
                 .deletedBy(usuario.getDeletedBy())
+                .profileImageUrl(usuario.getProfileImageUrl())
                 .build();
     }
 }
