@@ -1,9 +1,11 @@
 package apex.code.clipperBarberShop.reserva.domain.port.out;
 
 import apex.code.clipperBarberShop.Entities.Reserva;
+import apex.code.clipperBarberShop.Entities.enums.ReservaStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -49,4 +51,31 @@ public interface ReservaRepositoryPort {
     boolean existsByIdAndClientIdAndDeletedFalse(Long id, String clientId);
     
     boolean existsByIdAndEmpresaIdAndDeletedFalse(Long id, Long empresaId);
+    
+    // Buscar por empresa, fecha y estados específicos para disponibilidad
+    List<Reserva> findByEmpresaIdAndFechaAndStatusIn(
+            Long empresaId, 
+            LocalDate fecha, 
+            List<ReservaStatus> statuses);
+
+    // Buscar por empresa, fecha, empleado y estados específicos para disponibilidad
+    List<Reserva> findByEmpresaIdAndFechaAndEmpleadoIdAndStatusIn(
+            Long empresaId, 
+            LocalDate fecha, 
+            String empleadoId, 
+            List<ReservaStatus> statuses);
+    
+    // Métodos adicionales para consultar ocupación por rango de fechas y estados
+    List<Reserva> findByEmpresaIdAndEmployeeIdAndReservationDateBetweenAndStatusIn(
+            Long empresaId,
+            String employeeId,
+            LocalDateTime start,
+            LocalDateTime end,
+            List<String> statuses);
+    
+    List<Reserva> findByEmpresaIdAndReservationDateBetweenAndStatusIn(
+            Long empresaId,
+            LocalDateTime start,
+            LocalDateTime end,
+            List<String> statuses);
 }

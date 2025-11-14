@@ -1,12 +1,14 @@
 package apex.code.clipperBarberShop.reserva.adapters.out.persistence;
 
 import apex.code.clipperBarberShop.Entities.Reserva;
+import apex.code.clipperBarberShop.Entities.enums.ReservaStatus;
 import apex.code.clipperBarberShop.reserva.domain.port.out.ReservaRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -89,5 +91,43 @@ public class ReservaRepositoryAdapter implements ReservaRepositoryPort {
     @Override
     public boolean existsByIdAndEmpresaIdAndDeletedFalse(Long id, Long empresaId) {
         return jpaReservaRepository.existsByIdAndEmpresaIdAndDeletedFalse(id, empresaId);
+    }
+
+    @Override
+    public List<Reserva> findByEmpresaIdAndFechaAndStatusIn(
+            Long empresaId, 
+            LocalDate fecha, 
+            List<ReservaStatus> statuses) {
+        return jpaReservaRepository.findByEmpresaIdAndFechaAndStatusIn(empresaId, fecha, statuses);
+    }
+
+    @Override
+    public List<Reserva> findByEmpresaIdAndFechaAndEmpleadoIdAndStatusIn(
+            Long empresaId, 
+            LocalDate fecha, 
+            String empleadoId, 
+            List<ReservaStatus> statuses) {
+        return jpaReservaRepository.findByEmpresaIdAndFechaAndEmpleadoIdAndStatusIn(empresaId, fecha, empleadoId, statuses);
+    }
+
+    @Override
+    public List<Reserva> findByEmpresaIdAndEmployeeIdAndReservationDateBetweenAndStatusIn(
+            Long empresaId,
+            String employeeId,
+            LocalDateTime start,
+            LocalDateTime end,
+            List<String> statuses) {
+        return jpaReservaRepository.findByEmpresaIdAndEmployeeIdAndReservationDateBetweenAndStatusIn(
+                empresaId, employeeId, start, end, statuses);
+    }
+
+    @Override
+    public List<Reserva> findByEmpresaIdAndReservationDateBetweenAndStatusIn(
+            Long empresaId,
+            LocalDateTime start,
+            LocalDateTime end,
+            List<String> statuses) {
+        return jpaReservaRepository.findByEmpresaIdAndReservationDateBetweenAndStatusIn(
+                empresaId, start, end, statuses);
     }
 }

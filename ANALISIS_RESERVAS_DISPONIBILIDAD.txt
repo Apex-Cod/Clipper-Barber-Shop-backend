@@ -1,0 +1,280 @@
+===============================================================================
+📅 ANÁLISIS RESERVAS Y DISPONIBILIDAD - GUÍA PARA FRONTEND
+===============================================================================
+
+📋 RESUMEN
+===============================================================================
+Este documento explica la relación entre Reservas y Disponibilidad, y cómo el 
+frontend debe consumir la API para mostrar horarios disponibles y crear reservas.
+
+🔗 RELACIÓN ENTRE ENTIDADES
+===============================================================================
+
+RESERVA:
+├── ID único de la reserva
+├── empresaId: Empresa donde se presta el servicio
+├── serviceId: Servicio que se va a realizar
+├── clientId: Cliente que hace la reserva
+├── employeeId: Empleado que realizará el servicio
+├── reservationDate: Fecha y hora exacta (LocalDateTime)
+├── duracionMinutos: Duración del servicio
+├── status: PENDING, CONFIRMED, COMPLETED, CANCELLED
+└── finalPrice: Precio final con descuentos aplicados
+
+DISPONIBILIDAD:
+├── ID único de la disponibilidad
+├── empresaId: Empresa
+├── employeeId: Empleado específico
+├── fecha: Día específico (LocalDate)
+├── horaInicio: Hora de inicio disponible
+├── horaFin: Hora de fin disponible
+└── deleted: Si está eliminada (soft delete)
+
+🔄 CÓMO SE RELACIONAN
+===============================================================================
+
+1. DISPONIBILIDAD define las VENTANAS DE TIEMPO donde un empleado puede trabajar
+2. RESERVA ocupa un SLOT ESPECÍFICO dentro de esa disponibilidad
+3. El sistema debe verificar:
+   ✅ Que existe disponibilidad para la fecha/empleado
+   ✅ Que el horario solicitado esté dentro de la disponibilidad
+   ✅ Que no hay conflicto con otras reservas
+
+EJEMPLO:
+- Empleado Carlos tiene disponibilidad: 2024-12-15 de 09:00 a 18:00
+- Cliente reserva: 2024-12-15 14:30 (servicio de 30 min)
+- Resultado: Slot 14:30-15:00 queda ocupado
+
+🎯 ENDPOINTS PARA EL FRONTEND
+===============================================================================
+
+1. OBTENER EMPLEADOS DE UNA EMPRESA
+───────────────────────────────────────────────────────────────────────────────
+GET /api/client/servicios/empleados/empresa/{empresaId}
+Rol: CLIENT
+
+Response:
+{
+  "success": true,
+  "message": "Empleados obtenidos", 
+  "data": [
+    {
+      "id": "uuid-empleado-1",
+      "nombre": "Carlos",
+      "apellido": "Martínez",
+      "activo": true,
+      "empresaId": 1
+    }
+  ]
+}
+
+2. OBTENER HORARIOS OCUPADOS
+───────────────────────────────────────────────────────────────────────────────
+GET /api/client/reservas/occupied-slots?empresaId=1&fecha=2024-12-15&empleadoId=uuid
+
+Parámetros:
+- empresaId: ID de la empresa (requerido)
+- fecha: Fecha en formato YYYY-MM-DD (requerido)  
+- empleadoId: ID del empleado específico (opcional)
+
+Response:
+{
+  "success": true,
+  "message": "Horarios ocupados obtenidos",
+  "data": [
+    "09:00",
+    "10:30", 
+    "14:30",
+    "16:00"
+  ]
+}
+
+3. CREAR RESERVA
+───────────────────────────────────────────────────────────────────────────────
+POST /api/client/reservas
+
+Request:
+{
+  "serviceId": 1,
+  "reservationDate": "2024-12-15T14:30:00",
+  "employeeId": "uuid-empleado",
+  "promocionId": null,
+  "notas": "Corte especial"
+}
+
+🖥️ FLUJO RECOMENDADO PARA EL FRONTEND
+===============================================================================
+
+PASO 1: SELECCIÓN DE EMPRESA Y SERVICIO
+1. Cliente selecciona empresa y servicio
+2. Frontend obtiene duración del servicio
+
+PASO 2: SELECCIÓN DE EMPLEADO
+1. Frontend llama: GET /api/client/servicios/empleados/empresa/{empresaId}
+2. Muestra lista de empleados disponibles
+3. Cliente selecciona empleado
+
+PASO 3: SELECCIÓN DE FECHA
+1. Cliente selecciona fecha (mínimo mañana)
+2. Frontend valida que sea día futuro
+
+PASO 4: OBTENER DISPONIBILIDAD
+1. Frontend llama: GET /api/client/reservas/occupied-slots
+   - empresaId: ID empresa seleccionada
+   - fecha: Fecha seleccionada (YYYY-MM-DD)
+   - empleadoId: Empleado seleccionado
+
+2. Frontend recibe horarios ocupados: ["09:00", "14:30", "16:00"]
+
+PASO 5: GENERAR SLOTS DISPONIBLES
+1. Frontend genera slots basado en:
+   - Horario comercial de la empresa (ej: 09:00-18:00)
+   - Duración del servicio (ej: 30 minutos)
+   - Horarios ocupados recibidos
+
+2. Algoritmo sugerido:
+   ```javascript
+   function generarSlotsDisponibles(horaInicio, horaFin, duracion, ocupados) {
+     const slots = [];
+     let horaActual = horaInicio;
+     
+     while (horaActual + duracion <= horaFin) {
+       const horaString = horaActual.format("HH:mm");
+       
+       // Verificar si este slot no está ocupado
+       if (!ocupados.includes(horaString)) {
+         slots.push(horaString);
+       }
+       
+       horaActual.add(30, 'minutes'); // Incremento de 30 min
+     }
+     
+     return slots;
+   }
+   ```
+
+PASO 6: MOSTRAR SLOTS AL CLIENTE
+1. Frontend muestra grid de horarios disponibles
+2. Cliente selecciona horario deseado
+
+PASO 7: CREAR RESERVA
+1. Frontend construye objeto reserva:
+   ```javascript
+   {
+     serviceId: servicioSeleccionado.id,
+     reservationDate: `${fechaSeleccionada}T${horaSeleccionada}:00`,
+     employeeId: empleadoSeleccionado.id,
+     promocionId: promocionAplicada?.id || null,
+     notas: notasCliente || ""
+   }
+   ```
+
+2. Frontend envía: POST /api/client/reservas
+
+📱 CASOS DE USO FRONTEND
+===============================================================================
+
+CASO 1: MOSTRAR CALENDARIO DE DISPONIBILIDAD
+- Usuario ve calendario mensual
+- Días con disponibilidad en verde
+- Días sin disponibilidad en gris
+- Al hacer click, muestra horarios del día
+
+CASO 2: SELECTOR DE HORARIOS
+- Vista de grilla con slots de 30 minutos
+- Slots ocupados: botón deshabilitado
+- Slots disponibles: botón activo
+- Indicador visual de duración del servicio
+
+CASO 3: RESERVA RÁPIDA
+- Cliente frecuente selecciona "mismo empleado"
+- Frontend filtra por empleado favorito
+- Muestra próximos slots disponibles
+
+CASO 4: REPROGRAMAR RESERVA
+- Mostrar disponibilidad excluyendo la reserva actual
+- Permitir cambiar fecha/hora/empleado
+- Validar disponibilidad antes de confirmar
+
+⚠️ VALIDACIONES IMPORTANTES FRONTEND
+===============================================================================
+
+✅ ANTES DE MOSTRAR HORARIOS:
+- Validar que la fecha es futura
+- Validar que la empresa está activa
+- Validar que el empleado está activo
+
+✅ ANTES DE CREAR RESERVA:
+- Re-validar disponibilidad (por si cambió)
+- Confirmar datos con el usuario
+- Mostrar precio final calculado
+
+✅ MANEJO DE ERRORES:
+- Horario ya ocupado → Sugerir horarios alternativos
+- Empleado no disponible → Sugerir otros empleados
+- Servicio no disponible → Redirigir a catálogo
+
+🔄 ACTUALIZACIÓN EN TIEMPO REAL (OPCIONAL)
+===============================================================================
+
+Para experiencia premium, el frontend puede:
+
+1. POLLING: Actualizar ocupación cada 30 segundos
+2. WEBSOCKETS: Recibir notificaciones de cambios
+3. OPTIMISTIC UI: Mostrar reserva inmediatamente, revertir si falla
+
+📊 ESTRUCTURA DE DATOS RECOMENDADA FRONTEND
+===============================================================================
+
+Estado de la aplicación para reservas:
+```javascript
+const reservaState = {
+  empresaSeleccionada: null,
+  servicioSeleccionado: null,
+  empleadoSeleccionado: null,
+  fechaSeleccionada: null,
+  horaSeleccionada: null,
+  horariosOcupados: [],
+  horariosDisponibles: [],
+  promocionAplicada: null,
+  precioFinal: 0,
+  loading: false,
+  error: null
+};
+```
+
+Flujo de estado:
+1. seleccionarEmpresa() → cargar servicios
+2. seleccionarServicio() → cargar empleados  
+3. seleccionarEmpleado() → habilitar calendario
+4. seleccionarFecha() → cargar ocupación → generar disponibles
+5. seleccionarHora() → calcular precio → mostrar resumen
+6. confirmarReserva() → enviar API → mostrar confirmación
+
+🚀 OPTIMIZACIONES SUGERIDAS
+===============================================================================
+
+1. CACHE DE DATOS:
+- Empleados por empresa (24h)
+- Horarios comerciales (1 semana)
+- Servicios por empresa (1h)
+
+2. PREFETCH:
+- Cargar empleados al seleccionar empresa
+- Pre-cargar horarios del día siguiente
+
+3. UX MEJORADO:
+- Mostrar duración visualmente en los slots
+- Indicar horarios "casi ocupados" (pocos slots libres)
+- Sugerir horarios alternativos automáticamente
+
+===============================================================================
+🔚 FIN DEL ANÁLISIS
+===============================================================================
+
+Con esta implementación, el frontend tiene toda la funcionalidad necesaria para:
+✅ Mostrar empleados disponibles
+✅ Consultar horarios ocupados  
+✅ Generar slots disponibles
+✅ Crear reservas sin conflictos
+✅ Validar disponibilidad en tiempo real

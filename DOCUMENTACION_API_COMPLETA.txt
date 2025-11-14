@@ -1,0 +1,638 @@
+===============================================================================
+🚀 DOCUMENTACIÓN COMPLETA DEL BACKEND CLIPPER BARBER SHOP
+===============================================================================
+
+📋 RESUMEN GENERAL
+=====================================│ GET     │ /empresa/{id}/categoria/{categoria} │ Por categoría                 │
+│ GET     │ /empleados/empresa/{empresaId}   │ Empleados públicos de empresa │
+└─────────┴─────────────────────────────────┴───────────────────────────────┘========================================
+
+Framework: Spring Boot 3.5.6 + Java 17
+Base de datos: PostgreSQL 15 (puerto 5434)
+Autenticación: JWT con expiración de 24 horas
+Almacenamiento: Supabase para archivos/imágenes
+Arquitectura: Clean Architecture (Puertos y Adaptadores)
+Encriptación: BCrypt para contraseñas
+
+===============================================================================
+🎯 MÓDULOS Y ENDPOINTS DETALLADOS
+===============================================================================
+
+1. 🔐 MÓDULO DE AUTENTICACIÓN
+===============================================================================
+Base URL: /api/auth
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ENDPOINTS                                                                   │
+├─────────┬─────────────────────┬─────────────────────────┬─────────────────────┤
+│ Método  │ Endpoint            │ Descripción             │ Rol                 │
+├─────────┼─────────────────────┼─────────────────────────┼─────────────────────┤
+│ POST    │ /login              │ Autenticación usuarios  │ Público             │
+│ POST    │ /forgot-password    │ Recuperación contraseña │ Público             │
+└─────────┴─────────────────────┴─────────────────────────┴─────────────────────┘
+
+📄 FORMATOS JSON:
+
+Login Request:
+{
+  "email": "alice@acmebarber.com",
+  "password": "Password123!"
+}
+
+Login Response:
+{
+  "success": true,
+  "message": "Autenticación exitosa",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "type": "Bearer",
+    "userId": "uuid-del-usuario",
+    "email": "alice@acmebarber.com",
+    "role": "OWNER",
+    "nombre": "Alice",
+    "apellido": "Johnson"
+  }
+}
+
+Forgot Password Request:
+{
+  "email": "alice@acmebarber.com"
+}
+
+===============================================================================
+2. 📝 MÓDULO DE REGISTRO
+===============================================================================
+Base URL: /api/registro
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ENDPOINTS                                                                   │
+├─────────┬─────────────────────────────────┬─────────────────────┬───────────┤
+│ Método  │ Endpoint                        │ Descripción         │ Rol       │
+├─────────┼─────────────────────────────────┼─────────────────────┼───────────┤
+│ POST    │ /empresa                        │ Registrar empresa   │ Público   │
+│ POST    │ /empleado                       │ Registrar empleado  │ OWNER     │
+│ POST    │ /cliente                        │ Registrar cliente   │ Público   │
+│ GET     │ /verify?token=...               │ Verificar email     │ Público   │
+│ POST    │ /verify-code?email=...&code=... │ Verificar código    │ Público   │
+│ POST    │ /resend-verification            │ Reenviar verificar  │ Público   │
+└─────────┴─────────────────────────────────┴─────────────────────┴───────────┘
+
+📄 FORMATOS JSON:
+
+Registro Empresa Request:
+{
+  "empresaNombre": "Acme Barber Shop",
+  "empresaEmail": "contact@acmebarber.com",
+  "empresaPublicoObjetivo": "HOMBRES",
+  "adminName": "Alice",
+  "adminLastName": "Johnson",
+  "adminEmail": "alice@acmebarber.com",
+  "adminPassword": "Password123!"
+}
+
+Registro Cliente Request:
+{
+  "nombre": "Juan",
+  "apellido": "Pérez",
+  "email": "juan@email.com",
+  "password": "Password123!"
+}
+
+Registro Empleado Request:
+{
+  "nombre": "Carlos",
+  "apellido": "Martínez",
+  "email": "carlos@acmebarber.com",
+  "password": "Password123!"
+}
+
+Resend Verification Request:
+{
+  "email": "usuario@email.com"
+}
+
+===============================================================================
+3. 🏢 MÓDULO DE CONFIGURACIÓN DE EMPRESA
+===============================================================================
+Base URL: /api/empresas
+Rol Requerido: OWNER
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ENDPOINTS                                                                   │
+├─────────┬─────────────────────────────────┬─────────────────────────────────┤
+│ Método  │ Endpoint                        │ Descripción                     │
+├─────────┼─────────────────────────────────┼─────────────────────────────────┤
+│ GET     │ /mi-empresa/configuracion       │ Obtener configuración           │
+│ PUT     │ /mi-empresa/informacion-basica  │ Actualizar info básica          │
+│ PUT     │ /mi-empresa/horarios            │ Actualizar horarios             │
+│ PUT     │ /mi-empresa/ubicacion           │ Actualizar ubicación            │
+│ POST    │ /mi-empresa/logo                │ Subir logo (multipart)          │
+│ POST    │ /mi-empresa/banner              │ Subir banner (multipart)        │
+│ DELETE  │ /mi-empresa/logo                │ Eliminar logo                   │
+│ DELETE  │ /mi-empresa/banner              │ Eliminar banner                 │
+└─────────┴─────────────────────────────────┴─────────────────────────────────┘
+
+📄 FORMATOS JSON:
+
+Actualizar Información Básica:
+{
+  "nombre": "Acme Barber Shop Premium",
+  "email": "premium@acmebarber.com",
+  "telefono": "+56912345678",
+  "descripcion": "La mejor barbería de la ciudad",
+  "publicoObjetivo": "HOMBRES"
+}
+
+Actualizar Horarios:
+{
+  "horariosAtencion": {
+    "LUNES": {
+      "abierto": true,
+      "horaApertura": "09:00",
+      "horaCierre": "19:00"
+    },
+    "MARTES": {
+      "abierto": true,
+      "horaApertura": "09:00",
+      "horaCierre": "19:00"
+    },
+    "MIERCOLES": {
+      "abierto": true,
+      "horaApertura": "09:00",
+      "horaCierre": "19:00"
+    },
+    "JUEVES": {
+      "abierto": true,
+      "horaApertura": "09:00",
+      "horaCierre": "19:00"
+    },
+    "VIERNES": {
+      "abierto": true,
+      "horaApertura": "09:00",
+      "horaCierre": "19:00"
+    },
+    "SABADO": {
+      "abierto": true,
+      "horaApertura": "10:00",
+      "horaCierre": "18:00"
+    },
+    "DOMINGO": {
+      "abierto": false
+    }
+  }
+}
+
+Actualizar Ubicación:
+{
+  "direccion": "Av. Principal 123",
+  "ciudad": "Santiago",
+  "region": "Metropolitana",
+  "codigoPostal": "7500000",
+  "latitud": -33.4489,
+  "longitud": -70.6693
+}
+
+===============================================================================
+4. 👥 MÓDULO DE GESTIÓN DE USUARIOS
+===============================================================================
+Base URL: /api/users
+Roles: OWNER, ADMIN (algunos endpoints son para cualquier usuario autenticado)
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ENDPOINTS                                                                   │
+├─────────┬─────────────────────┬─────────────────────────────┬───────────────┤
+│ Método  │ Endpoint            │ Descripción                 │ Rol           │
+├─────────┼─────────────────────┼─────────────────────────────┼───────────────┤
+│ GET     │ /me                 │ Obtener perfil propio       │ Cualquiera    │ quiero usar este endpoint se supone q es para cualquira para no estar crando para cada rol
+│ GET     │ /{id}               │ Obtener usuario por ID      │ OWNER, ADMIN  │
+│ GET     │ /empresa/{empresaId}│ Usuarios de empresa         │ OWNER, ADMIN  │
+│ GET     │ /                   │ Todos los usuarios          │ ADMIN         │
+│ GET     │ /deleted            │ Usuarios eliminados         │ OWNER, ADMIN  │
+│ PUT     │ /{id}               │ Actualizar usuario          │ OWNER, ADMIN  │
+│ PUT     │ /me                 │ Actualizar perfil propio    │ Cualquiera    │ quiero usar este endpoint
+│ PUT     │ /{id}/password      │ Cambiar contraseña          │ Propio        │ 
+│ PUT     │ /me/password        │ Cambiar mi contraseña       │ Cualquiera    │ quiero usar este endpoint
+│ PATCH   │ /{id}/estado        │ Cambiar estado activo       │ OWNER, ADMIN  │
+│ PATCH   │ /{id}/activar       │ Activar usuario             │ OWNER, ADMIN  │
+│ PATCH   │ /{id}/desactivar    │ Desactivar usuario          │ OWNER, ADMIN  │
+│ DELETE  │ /{id}               │ Eliminar (soft delete)      │ OWNER, ADMIN  │
+│ POST    │ /{id}/restore       │ Restaurar eliminado         │ OWNER, ADMIN  │
+└─────────┴─────────────────────┴─────────────────────────────┴───────────────┘
+
+📄 FORMATOS JSON:
+
+Actualizar Usuario:
+{
+  "nombre": "Juan Carlos",
+  "apellido": "Pérez López",
+  "email": "juan.carlos@email.com"
+}
+
+Cambiar Contraseña:
+{
+  "passwordActual": "Password123!",
+  "passwordNueva": "NewPassword456!",
+  "confirmarPassword": "NewPassword456!"
+}
+
+Cambiar Estado:
+{
+  "activo": true
+}
+
+===============================================================================
+5. ✂️ MÓDULO DE SERVICIOS
+===============================================================================
+
+5.1 PARA OWNERS
+===============================================================================
+Base URL: /api/owner/servicios
+Rol Requerido: OWNER
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ENDPOINTS                                                                   │
+├─────────┬─────────────────────┬─────────────────────────────────────────────┤
+│ Método  │ Endpoint            │ Descripción                                 │
+├─────────┼─────────────────────┼─────────────────────────────────────────────┤
+│ POST    │ /                   │ Crear servicio (multipart)                 │
+│ PUT     │ /{id}               │ Actualizar servicio (multipart)            │
+│ GET     │ /{id}               │ Obtener servicio                            │
+│ GET     │ /                   │ Listar servicios de mi empresa              │
+│ GET     │ /paginados          │ Listar paginados                            │
+│ GET     │ /categoria/{cat}    │ Filtrar por categoría                       │
+│ DELETE  │ /{id}               │ Eliminar (soft delete)                      │
+│ PATCH   │ /{id}/restaurar     │ Restaurar eliminado                         │
+└─────────┴─────────────────────┴─────────────────────────────────────────────┘
+
+5.2 PARA CLIENTS
+===============================================================================
+Base URL: /api/client/servicios
+Rol Requerido: CLIENT
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ENDPOINTS                                                                   │
+├─────────┬─────────────────────────────────────┬───────────────────────────────┤
+│ Método  │ Endpoint                            │ Descripción                   │
+├─────────┼─────────────────────────────────────┼───────────────────────────────┤
+│ GET     │ /empresas                           │ Listar empresas               │
+│ GET     │ /empresas/paginadas                 │ Empresas paginadas            │
+│ GET     │ /empresas/{id}                      │ Obtener empresa               │
+│ GET     │ /{id}                               │ Obtener servicio              │
+│ GET     │ /empresa/{empresaId}                │ Servicios de empresa          │
+│ GET     │ /empresa/{empresaId}/paginados      │ Servicios paginados           │
+│ GET     │ /empresa/{id}/categoria/{categoria} │ Por categoría                 │
+└─────────┴─────────────────────────────────────┴───────────────────────────────┘
+
+📄 FORMATOS JSON:
+
+Crear Servicio (multipart/form-data):
+Campo "servicioData":
+{
+  "empresaId": 1,
+  "name": "Corte Clásico",
+  "description": "Corte tradicional masculino",
+  "duration": 30,
+  "price": 15000.0,
+  "categoria": "CORTES",
+  "publicoObjetivo": "HOMBRES",
+  "imageUrl": null
+}
+Campo "image": archivo opcional
+
+Actualizar Servicio (multipart/form-data):
+Campo "servicioData":
+{
+  "name": "Corte Premium",
+  "description": "Corte premium con lavado",
+  "duration": 45,
+  "price": 20000.0,
+  "categoria": "CORTES",
+  "publicoObjetivo": "HOMBRES"
+}
+Campo "image": archivo opcional
+
+Listar Empleados Públicos Response:
+{
+  "success": true,
+  "message": "Empleados obtenidos",
+  "data": [
+    {
+      "id": "uuid-empleado-1",
+      "nombre": "Carlos",
+      "apellido": "Martínez",
+      "activo": true,
+      "empresaId": 1
+    },
+    {
+      "id": "uuid-empleado-2", 
+      "nombre": "Ana",
+      "apellido": "López",
+      "activo": true,
+      "empresaId": 1
+    }
+  ]
+}
+
+===============================================================================
+6. 📅 MÓDULO DE RESERVAS
+===============================================================================
+
+6.1 PARA OWNERS
+===============================================================================
+Base URL: /api/owner/reservas
+Rol Requerido: OWNER
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ENDPOINTS                                                                   │
+├─────────┬─────────────────────────────────┬───────────────────────────────────┤
+│ Método  │ Endpoint                        │ Descripción                       │
+├─────────┼─────────────────────────────────┼───────────────────────────────────┤
+│ POST    │ /cliente/{clientId}             │ Crear reserva para cliente        │
+│ PUT     │ /{id}                           │ Actualizar reserva                │
+│ PATCH   │ /{id}/confirmar                 │ Confirmar reserva                 │
+│ PATCH   │ /{id}/completar                 │ Completar reserva                 │
+│ PATCH   │ /{id}/cancelar                  │ Cancelar reserva                  │
+│ PATCH   │ /{id}/reprogramar               │ Reprogramar reserva               │
+│ GET     │ /{id}                           │ Obtener detalles                  │
+│ GET     │ /                               │ Listar todas                      │
+│ GET     │ /paginadas                      │ Listar paginadas                  │
+│ GET     │ /estado/{status}                │ Por estado                        │
+│ GET     │ /empleado/{employeeId}          │ Por empleado                      │
+│ GET     │ /rango?inicio=...&fin=...       │ Por rango fechas                  │
+│ DELETE  │ /{id}                           │ Eliminar (soft delete)            │
+└─────────┴─────────────────────────────────┴───────────────────────────────────┘
+
+6.2 PARA CLIENTS
+===============================================================================
+Base URL: /api/client/reservas
+Rol Requerido: CLIENT
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ENDPOINTS                                                                   │
+├─────────┬─────────────────────┬─────────────────────────────────────────────┤
+│ Método  │ Endpoint            │ Descripción                                 │
+├─────────┼─────────────────────┼─────────────────────────────────────────────┤
+│ POST    │ /                   │ Crear reserva propia                        │
+│ PUT     │ /{id}               │ Actualizar reserva propia                   │
+│ PATCH   │ /{id}/cancelar      │ Cancelar reserva propia                     │
+│ PATCH   │ /{id}/reprogramar   │ Reprogramar reserva propia                  │
+│ GET     │ /{id}               │ Obtener detalles propias                    │
+│ GET     │ /                   │ Listar mis reservas                         │
+│ GET     │ /paginadas          │ Mis reservas paginadas                      │
+│ GET     │ /estado/{status}    │ Mis reservas por estado                     │
+│ DELETE  │ /{id}               │ Eliminar reserva propia                     │
+└─────────┴─────────────────────┴─────────────────────────────────────────────┘
+
+📄 FORMATOS JSON:
+
+Crear Reserva:
+{
+  "serviceId": 1,
+  "reservationDate": "2024-12-25T14:00:00",
+  "employeeId": "uuid-empleado",
+  "promocionId": 2,
+  "notas": "Corte para evento especial"
+}
+
+Actualizar Reserva:
+{
+  "serviceId": 1,
+  "reservationDate": "2024-12-25T15:00:00",
+  "employeeId": "uuid-empleado",
+  "promocionId": null,
+  "notas": "Cambio de horario"
+}
+
+Cancelar Reserva:
+{
+  "motivo": "No puedo asistir"
+}
+
+Reprogramar Reserva:
+{
+  "nuevaFecha": "2024-12-26T14:00:00",
+  "motivo": "Conflicto de horario"
+}
+
+Obtener Horarios Ocupados:
+GET /api/client/reservas/occupied-slots?empresaId=1&fecha=2024-12-15&empleadoId=uuid
+
+Response:
+{
+  "success": true,
+  "message": "Horarios ocupados obtenidos",
+  "data": [
+    "09:00",
+    "10:30", 
+    "14:30",
+    "16:00"
+  ]
+}
+
+Estados de Reserva: PENDING, CONFIRMED, COMPLETED, CANCELLED
+
+===============================================================================
+7. 🎯 MÓDULO DE PROMOCIONES
+===============================================================================
+Base URL: /api/owner/promociones
+Rol Requerido: OWNER
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ENDPOINTS                                                                   │
+├─────────┬─────────────────────┬─────────────────────────────────────────────┤
+│ Método  │ Endpoint            │ Descripción                                 │
+├─────────┼─────────────────────┼─────────────────────────────────────────────┤
+│ POST    │ /                   │ Crear promoción                             │
+│ PUT     │ /{id}               │ Actualizar promoción                        │
+│ GET     │ /{id}               │ Obtener promoción                           │
+│ GET     │ /                   │ Listar todas                                │
+│ GET     │ /paginadas          │ Listar paginadas                            │
+│ GET     │ /activas            │ Solo activas                                │
+│ PATCH   │ /{id}/activar       │ Activar promoción                           │
+│ PATCH   │ /{id}/desactivar    │ Desactivar promoción                        │
+│ DELETE  │ /{id}               │ Eliminar (soft delete)                      │
+└─────────┴─────────────────────┴─────────────────────────────────────────────┘
+
+📄 FORMATOS JSON:
+
+Crear Promoción:
+{
+  "nombre": "Descuento Navidad",
+  "descripcion": "25% de descuento en todos los servicios",
+  "tipoDescuento": "PORCENTAJE",
+  "valorDescuento": 25.0,
+  "fechaInicio": "2024-12-20",
+  "fechaFin": "2024-12-31",
+  "limiteUsos": 100,
+  "montoMinimo": 10000.0,
+  "servicioId": null
+}
+
+Actualizar Promoción:
+{
+  "nombre": "Super Descuento Navidad",
+  "descripcion": "30% de descuento en servicios premium",
+  "tipoDescuento": "PORCENTAJE",
+  "valorDescuento": 30.0,
+  "fechaInicio": "2024-12-20",
+  "fechaFin": "2024-12-31",
+  "limiteUsos": 50,
+  "montoMinimo": 15000.0,
+  "servicioId": 1
+}
+
+Tipos de Descuento: PORCENTAJE, MONTO_FIJO
+
+===============================================================================
+8. 🧪 MÓDULO DE PRUEBAS
+===============================================================================
+Base URL: /api/test
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ENDPOINTS                                                                   │
+├─────────┬─────────────────────┬─────────────────────────┬─────────────────────┤
+│ Método  │ Endpoint            │ Descripción             │ Rol                 │
+├─────────┼─────────────────────┼─────────────────────────┼─────────────────────┤
+│ GET     │ /public             │ Endpoint público        │ Público             │
+│ GET     │ /protected          │ Endpoint protegido      │ OWNER,ADMIN,EMPLOYEE│
+│ GET     │ /client-only        │ Solo clientes           │ CLIENT              │
+└─────────┴─────────────────────┴─────────────────────────┴─────────────────────┘
+
+===============================================================================
+🔑 SISTEMA DE ROLES Y PERMISOS
+===============================================================================
+
+ROLES DISPONIBLES:
+├── OWNER: Dueño de barbería (acceso total a su empresa)
+├── EMPLOYEE: Empleado (acceso limitado)
+├── CLIENT: Cliente (solo reservas propias)
+└── ADMIN: Administrador del sistema (acceso global)
+
+ENUM PublicoObjetivo:
+├── HOMBRES
+├── MUJERES
+└── MIXTO
+
+ESTADOS DE RESERVA:
+├── PENDING: Pendiente
+├── CONFIRMED: Confirmada
+├── COMPLETED: Completada
+└── CANCELLED: Cancelada
+
+TIPOS DE DESCUENTO:
+├── PORCENTAJE: Descuento en porcentaje (1-100%)
+└── MONTO_FIJO: Descuento en monto fijo
+
+===============================================================================
+🌐 FLUJO DE AUTENTICACIÓN
+===============================================================================
+
+1. Login → POST /api/auth/login → Recibe JWT token
+2. Header Authorization: Bearer {token}
+3. Token expira en 24 horas
+4. Verificación de email requerida para activar cuenta
+
+Ejemplo de uso:
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+===============================================================================
+📱 FLUJO DE REGISTRO
+===============================================================================
+
+PARA EMPRESA:
+1. POST /api/registro/empresa
+2. Se envía email de verificación
+3. Usuario verifica con /api/registro/verify?token=... o /api/registro/verify-code
+4. Cuenta activa para login
+
+PARA CLIENTE:
+1. POST /api/registro/cliente
+2. Verificación de email
+3. Login disponible
+
+PARA EMPLEADO:
+1. OWNER registra empleado con POST /api/registro/empleado
+2. Se envía email de verificación al empleado
+3. Empleado verifica su email
+4. Login disponible
+
+===============================================================================
+🔧 CONFIGURACIÓN REQUERIDA
+===============================================================================
+
+HEADERS REQUERIDOS:
+Para endpoints autenticados:
+Authorization: Bearer {jwt-token}
+Content-Type: application/json
+
+Para uploads (multipart):
+Authorization: Bearer {jwt-token}
+Content-Type: multipart/form-data
+
+ESTRUCTURA DE RESPUESTA ESTÁNDAR:
+{
+  "success": true/false,
+  "message": "Mensaje descriptivo",
+  "data": {objeto de respuesta} / null
+}
+
+===============================================================================
+⚠️ NOTAS IMPORTANTES
+===============================================================================
+
+1. SOFT DELETE: Los registros se marcan como eliminados, no se borran físicamente
+
+2. MULTIPART: Servicios y configuración de empresa usan multipart para imágenes
+   - Campo de datos: JSON string
+   - Campo de imagen: archivo
+
+3. VALIDACIONES: Todas las entradas tienen validaciones estrictas
+   - Emails válidos
+   - Contraseñas seguras (@ValidPassword)
+   - Longitudes de campos
+
+4. PAGINACIÓN: Disponible en endpoints que manejan listas grandes
+   - Parámetros: page, size, sort
+   - Ejemplo: ?page=0&size=10&sort=nombre
+
+5. PRINCIPAL: Los controladores usan Principal principal para obtener el usuario autenticado
+
+6. FECHAS: Formato ISO 8601 (yyyy-MM-ddTHH:mm:ss)
+   - Ejemplo: 2024-12-25T14:30:00
+
+7. ZONA HORARIA: El sistema maneja fechas en la zona horaria local del servidor
+
+8. ARCHIVOS: Supabase storage para logos, banners e imágenes de servicios
+
+9. EMAIL: Sistema de verificación por email con códigos de 6 dígitos
+
+10. SEGURIDAD: BCrypt para hash de contraseñas, JWT para autenticación
+
+===============================================================================
+📊 DATOS DE PRUEBA
+===============================================================================
+
+USUARIO DE PRUEBA:
+Email: alice@acmebarber.com
+Password: Password123!
+Rol: OWNER
+Empresa: Acme Barber Shop
+
+PÚBLICOS OBJETIVO VÁLIDOS:
+- HOMBRES
+- MUJERES  
+- MIXTO
+
+CATEGORÍAS DE SERVICIOS COMUNES:
+- CORTES
+- BARBA
+- AFEITADO
+- TRATAMIENTOS
+- PAQUETES
+
+===============================================================================
+🚀 FIN DE LA DOCUMENTACIÓN
+===============================================================================
+Última actualización: 9 de noviembre de 2025
+Versión del backend: Spring Boot 3.5.6
+Estado: Documentación completa de todos los módulos

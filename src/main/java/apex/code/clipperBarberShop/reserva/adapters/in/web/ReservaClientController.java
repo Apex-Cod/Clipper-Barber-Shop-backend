@@ -24,9 +24,9 @@ import java.util.List;
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('CLIENT')")
 public class ReservaClientController {
-    
+
     private final ReservaClientService reservaClientService;
-    
+
     /**
      * Crea una nueva reserva
      */
@@ -39,7 +39,7 @@ public class ReservaClientController {
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Reserva creada exitosamente", reserva));
     }
-    
+
     /**
      * Actualiza una reserva propia
      * Solo si está en estado PENDING
@@ -52,7 +52,7 @@ public class ReservaClientController {
         ReservaResponse reserva = reservaClientService.actualizarReserva(id, request, principal.getName());
         return ResponseEntity.ok(ApiResponse.success("Reserva actualizada exitosamente", reserva));
     }
-    
+
     /**
      * Cancela una reserva propia
      */
@@ -67,7 +67,7 @@ public class ReservaClientController {
         reservaClientService.cancelarReserva(id, request, principal.getName());
         return ResponseEntity.ok(ApiResponse.success("Reserva cancelada exitosamente", null));
     }
-    
+
     /**
      * Reprograma una reserva propia
      * Solo si está en estado PENDING
@@ -80,7 +80,7 @@ public class ReservaClientController {
         ReservaResponse reserva = reservaClientService.reprogramarReserva(id, request, principal.getName());
         return ResponseEntity.ok(ApiResponse.success("Reserva reprogramada exitosamente", reserva));
     }
-    
+
     /**
      * Obtiene los detalles de una reserva propia
      */
@@ -91,7 +91,7 @@ public class ReservaClientController {
         ReservaDetalleResponse reserva = reservaClientService.obtenerReserva(id, principal.getName());
         return ResponseEntity.ok(ApiResponse.success("Reserva obtenida", reserva));
     }
-    
+
     /**
      * Lista todas las reservas propias
      */
@@ -100,7 +100,7 @@ public class ReservaClientController {
         List<ReservaResponse> reservas = reservaClientService.listarMisReservas(principal.getName());
         return ResponseEntity.ok(ApiResponse.success("Reservas obtenidas", reservas));
     }
-    
+
     /**
      * Lista reservas propias paginadas
      */
@@ -111,7 +111,7 @@ public class ReservaClientController {
         Page<ReservaResponse> reservas = reservaClientService.listarMisReservasPaginadas(principal.getName(), pageable);
         return ResponseEntity.ok(ApiResponse.success("Reservas obtenidas", reservas));
     }
-    
+
     /**
      * Lista reservas propias por estado
      */
@@ -122,7 +122,7 @@ public class ReservaClientController {
         List<ReservaResponse> reservas = reservaClientService.listarMisReservasPorEstado(status, principal.getName());
         return ResponseEntity.ok(ApiResponse.success("Reservas obtenidas", reservas));
     }
-    
+
     /**
      * Elimina una reserva propia (soft delete)
      * Solo si está cancelada o completada
@@ -133,5 +133,18 @@ public class ReservaClientController {
             Principal principal) {
         reservaClientService.eliminarReserva(id, principal.getName());
         return ResponseEntity.ok(ApiResponse.success("Reserva eliminada exitosamente", null));
+    }
+
+    /**
+     * Obtiene los horarios ocupados para una fecha y empresa específica
+     * Útil para mostrar disponibilidad en el frontend
+     */
+    @GetMapping("/occupied-slots")
+    public ResponseEntity<ApiResponse<List<String>>> obtenerHorariosOcupados(
+            @RequestParam String empresaId,
+            @RequestParam String fecha, // Formato: YYYY-MM-DD
+            @RequestParam(required = false) String empleadoId) {
+        List<String> horariosOcupados = reservaClientService.obtenerHorariosOcupados(empresaId, fecha, empleadoId);
+        return ResponseEntity.ok(ApiResponse.success("Horarios ocupados obtenidos", horariosOcupados));
     }
 }

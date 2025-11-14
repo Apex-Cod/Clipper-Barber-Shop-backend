@@ -50,6 +50,7 @@ public class SecurityConfig {
                         "/api/registro/verify",           // Verificación por enlace/código (GET)
                         "/api/registro/verify-code",      // Verificación manual (POST)
                         "/api/registro/resend-verification", // Reenviar email
+                        "/api/public/**",                 // Endpoints públicos (reseñas, etc.)
                         "/api/test/public",
                         "/api/test/websocket/**",         // WebSocket test endpoints
                         "/actuator/**",
