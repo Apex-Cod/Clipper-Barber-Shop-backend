@@ -9,7 +9,9 @@ import apex.code.clipperBarberShop.reserva.domain.port.out.ReservaRepositoryPort
 import apex.code.clipperBarberShop.register.domain.port.out.UsuarioRepositoryPort;
 import apex.code.clipperBarberShop.reserva.domain.exception.ReservaNotFoundException;
 import apex.code.clipperBarberShop.reserva.domain.exception.ReservaInvalidStateException;
+import apex.code.clipperBarberShop.shared.websocket.service.WebSocketNotificationService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -19,7 +21,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -29,10 +33,12 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class ReservaEmployeeService {
 
     private final ReservaRepositoryPort reservaRepository;
     private final UsuarioRepositoryPort usuarioRepository;
+    private final WebSocketNotificationService notificationService;
 
     /**
      * Lista todas las reservas asignadas al empleado
@@ -120,6 +126,31 @@ public class ReservaEmployeeService {
         reserva.setStatus("CONFIRMED");
         
         Reserva saved = reservaRepository.save(reserva);
+        
+        // 🔔 Enviar notificación WebSocket de reserva confirmada
+        try {
+            Usuario clienteObj = usuarioRepository.findById(reserva.getClientId()).orElse(null);
+            Usuario empleado = usuarioRepository.findById(employeeId).orElse(null);
+            
+            Map<String, Object> reservaData = new HashMap<>();
+            reservaData.put("id", saved.getId());
+            reservaData.put("serviceName", saved.getService().getName());
+            reservaData.put("clientName", clienteObj != null ? clienteObj.getName() + " " + clienteObj.getLastName() : "N/A");
+            reservaData.put("employeeId", saved.getEmployeeId());
+            reservaData.put("employeeName", empleado != null ? empleado.getName() + " " + empleado.getLastName() : "N/A");
+            reservaData.put("reservationDate", saved.getReservationDate().toString());
+            reservaData.put("finalPrice", saved.getFinalPrice());
+            reservaData.put("status", saved.getStatus());
+            
+            notificationService.sendReservaConfirmada(
+                    reserva.getEmpresa().getId(),
+                    reserva.getClientId(),
+                    reservaData
+            );
+        } catch (Exception e) {
+            log.error("Error enviando notificación WebSocket para reserva confirmada: {}", e.getMessage(), e);
+        }
+        
         return mapToResponse(saved);
     }
 
@@ -140,6 +171,31 @@ public class ReservaEmployeeService {
         reserva.setStatus("COMPLETED");
         
         Reserva saved = reservaRepository.save(reserva);
+        
+        // 🔔 Enviar notificación WebSocket de reserva completada
+        try {
+            Usuario clienteObj = usuarioRepository.findById(reserva.getClientId()).orElse(null);
+            Usuario empleado = usuarioRepository.findById(employeeId).orElse(null);
+            
+            Map<String, Object> reservaData = new HashMap<>();
+            reservaData.put("id", saved.getId());
+            reservaData.put("serviceName", saved.getService().getName());
+            reservaData.put("clientName", clienteObj != null ? clienteObj.getName() + " " + clienteObj.getLastName() : "N/A");
+            reservaData.put("employeeId", saved.getEmployeeId());
+            reservaData.put("employeeName", empleado != null ? empleado.getName() + " " + empleado.getLastName() : "N/A");
+            reservaData.put("reservationDate", saved.getReservationDate().toString());
+            reservaData.put("finalPrice", saved.getFinalPrice());
+            reservaData.put("status", saved.getStatus());
+            
+            notificationService.sendReservaCompletada(
+                    reserva.getEmpresa().getId(),
+                    reserva.getClientId(),
+                    reservaData
+            );
+        } catch (Exception e) {
+            log.error("Error enviando notificación WebSocket para reserva completada: {}", e.getMessage(), e);
+        }
+        
         return mapToResponse(saved);
     }
 
@@ -161,6 +217,35 @@ public class ReservaEmployeeService {
         // La entidad Reserva no tiene campo cancellationReason, se podría agregar si es necesario
         
         Reserva saved = reservaRepository.save(reserva);
+        
+        // 🔔 Enviar notificación WebSocket de reserva cancelada
+        try {
+            Usuario clienteObj = usuarioRepository.findById(reserva.getClientId()).orElse(null);
+            Usuario empleado = usuarioRepository.findById(employeeId).orElse(null);
+            
+            Map<String, Object> reservaData = new HashMap<>();
+            reservaData.put("id", saved.getId());
+            reservaData.put("serviceName", saved.getService().getName());
+            reservaData.put("clientName", clienteObj != null ? clienteObj.getName() + " " + clienteObj.getLastName() : "N/A");
+            reservaData.put("employeeId", saved.getEmployeeId());
+            reservaData.put("employeeName", empleado != null ? empleado.getName() + " " + empleado.getLastName() : "N/A");
+            reservaData.put("reservationDate", saved.getReservationDate().toString());
+            reservaData.put("finalPrice", saved.getFinalPrice());
+            reservaData.put("status", saved.getStatus());
+            if (request.getMotivo() != null) {
+                reservaData.put("motivo", request.getMotivo());
+            }
+            
+            notificationService.sendReservaCancelada(
+                    reserva.getEmpresa().getId(),
+                    reserva.getClientId(),
+                    employeeId,
+                    reservaData
+            );
+        } catch (Exception e) {
+            log.error("Error enviando notificación WebSocket para reserva cancelada: {}", e.getMessage(), e);
+        }
+        
         return mapToResponse(saved);
     }
 

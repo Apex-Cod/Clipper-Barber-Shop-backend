@@ -52,9 +52,9 @@ public class SecurityConfig {
                         "/api/registro/resend-verification", // Reenviar email
                         "/api/public/**",                 // Endpoints públicos (reseñas, etc.)
                         "/api/test/public",
-                        "/ws/**",                         // WebSocket
-                        "/api/test/websocket/**",         // Test WebSocket
-                        "/actuator/**"
+                        "/api/test/websocket/**",         // WebSocket test endpoints
+                        "/actuator/**",
+                        "/ws/**"                          // WebSocket endpoint
                 ).permitAll()
                 .requestMatchers("/api/registro/empleado").hasRole("OWNER")
                 .requestMatchers("/api/test/client-only").hasRole("CLIENT")
