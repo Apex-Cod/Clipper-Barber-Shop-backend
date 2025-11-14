@@ -239,7 +239,7 @@ public class ReservaClientService {
         }
         
         reserva.setStatus("CANCELLED");
-        reserva.setRecordatorioEnviado(false); // ⭐ Reiniciar flag (aunque ya no se necesita enviar)
+        reserva.setRecordatorioEnviado(false); // Reset reminder flag for data consistency: ensures no reminders are sent for cancelled reservations
         Reserva saved = reservaRepository.save(reserva);
         
         // � Enviar email de reserva cancelada
