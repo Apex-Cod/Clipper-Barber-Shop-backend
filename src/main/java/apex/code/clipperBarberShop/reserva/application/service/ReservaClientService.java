@@ -15,6 +15,7 @@ import apex.code.clipperBarberShop.servicio.domain.port.out.ServicioRepositoryPo
 import apex.code.clipperBarberShop.shared.websocket.service.WebSocketNotificationService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -35,6 +36,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ReservaClientService {
     
     private final ReservaRepositoryPort reservaRepository;
@@ -116,7 +118,7 @@ public class ReservaClientService {
             );
         } catch (Exception e) {
             // No fallar si la notificación falla
-            System.err.println("Error enviando notificación WebSocket: " + e.getMessage());
+            log.error("Error enviando notificación WebSocket para reserva creada: {}", e.getMessage(), e);
         }
         
         return mapToResponse(saved);
@@ -192,7 +194,7 @@ public class ReservaClientService {
                     reservaData
             );
         } catch (Exception e) {
-            System.err.println("Error enviando notificación WebSocket: " + e.getMessage());
+            log.error("Error enviando notificación WebSocket para reserva actualizada: {}", e.getMessage(), e);
         }
         
         return mapToResponse(updated);
@@ -244,7 +246,7 @@ public class ReservaClientService {
                     reservaData
             );
         } catch (Exception e) {
-            System.err.println("Error enviando notificación WebSocket: " + e.getMessage());
+            log.error("Error enviando notificación WebSocket para reserva cancelada: {}", e.getMessage(), e);
         }
     }
     
@@ -305,7 +307,7 @@ public class ReservaClientService {
                     reservaData
             );
         } catch (Exception e) {
-            System.err.println("Error enviando notificación WebSocket: " + e.getMessage());
+            log.error("Error enviando notificación WebSocket para reserva reprogramada: {}", e.getMessage(), e);
         }
         
         return mapToResponse(updated);

@@ -66,8 +66,12 @@ public class WebSocketNotificationService {
 
     /**
      * Envía una notificación de nueva reserva creada
+     * @param empresaId ID de la empresa
+     * @param clientId ID del cliente que creó la reserva
+     * @param employeeId ID del empleado asignado a la reserva
+     * @param reservaData Datos de la reserva
      */
-    public void sendReservaCreada(Long empresaId, String clientId, String ownerId, Map<String, Object> reservaData) {
+    public void sendReservaCreada(Long empresaId, String clientId, String employeeId, Map<String, Object> reservaData) {
         NotificationMessage notification = NotificationMessage.builder()
                 .type(NotificationType.RESERVA_CREADA)
                 .title("Nueva Reserva")
@@ -84,11 +88,11 @@ public class WebSocketNotificationService {
         // Notificar al cliente que creó la reserva
         sendNotificationToUser(clientId, notification);
 
-        // Notificar al owner de la empresa
-        NotificationMessage ownerNotification = NotificationMessage.builder()
+        // Notificar al empleado asignado
+        NotificationMessage employeeNotification = NotificationMessage.builder()
                 .type(NotificationType.RESERVA_CREADA)
-                .title("Nueva Reserva Recibida")
-                .message("Un cliente ha creado una nueva reserva")
+                .title("Nueva Reserva Asignada")
+                .message("Se te ha asignado una nueva reserva")
                 .resourceType("reserva")
                 .resourceId((Long) reservaData.get("id"))
                 .empresaId(empresaId)
@@ -97,7 +101,7 @@ public class WebSocketNotificationService {
                 .data(reservaData)
                 .actionUrl("/reservas/" + reservaData.get("id"))
                 .build();
-        sendNotificationToUser(ownerId, ownerNotification);
+        sendNotificationToUser(employeeId, employeeNotification);
 
         // Notificar a toda la empresa
         sendNotificationToEmpresa(empresaId, notification);
@@ -125,8 +129,12 @@ public class WebSocketNotificationService {
 
     /**
      * Envía una notificación de reserva cancelada
+     * @param empresaId ID de la empresa
+     * @param clientId ID del cliente
+     * @param employeeId ID del empleado asignado
+     * @param reservaData Datos de la reserva
      */
-    public void sendReservaCancelada(Long empresaId, String clientId, String ownerId, Map<String, Object> reservaData) {
+    public void sendReservaCancelada(Long empresaId, String clientId, String employeeId, Map<String, Object> reservaData) {
         NotificationMessage notification = NotificationMessage.builder()
                 .type(NotificationType.RESERVA_CANCELADA)
                 .title("Reserva Cancelada")
@@ -140,16 +148,20 @@ public class WebSocketNotificationService {
                 .build();
 
         sendNotificationToUser(clientId, notification);
-        if (ownerId != null) {
-            sendNotificationToUser(ownerId, notification);
+        if (employeeId != null) {
+            sendNotificationToUser(employeeId, notification);
         }
         sendNotificationToEmpresa(empresaId, notification);
     }
 
     /**
      * Envía una notificación de reserva reprogramada
+     * @param empresaId ID de la empresa
+     * @param clientId ID del cliente
+     * @param employeeId ID del empleado asignado
+     * @param reservaData Datos de la reserva
      */
-    public void sendReservaReprogramada(Long empresaId, String clientId, String ownerId, Map<String, Object> reservaData) {
+    public void sendReservaReprogramada(Long empresaId, String clientId, String employeeId, Map<String, Object> reservaData) {
         NotificationMessage notification = NotificationMessage.builder()
                 .type(NotificationType.RESERVA_REPROGRAMADA)
                 .title("Reserva Reprogramada")
@@ -164,8 +176,8 @@ public class WebSocketNotificationService {
                 .build();
 
         sendNotificationToUser(clientId, notification);
-        if (ownerId != null) {
-            sendNotificationToUser(ownerId, notification);
+        if (employeeId != null) {
+            sendNotificationToUser(employeeId, notification);
         }
         sendNotificationToEmpresa(empresaId, notification);
     }
@@ -192,8 +204,12 @@ public class WebSocketNotificationService {
 
     /**
      * Envía una notificación de reserva actualizada
+     * @param empresaId ID de la empresa
+     * @param clientId ID del cliente
+     * @param employeeId ID del empleado asignado
+     * @param reservaData Datos de la reserva
      */
-    public void sendReservaActualizada(Long empresaId, String clientId, String ownerId, Map<String, Object> reservaData) {
+    public void sendReservaActualizada(Long empresaId, String clientId, String employeeId, Map<String, Object> reservaData) {
         NotificationMessage notification = NotificationMessage.builder()
                 .type(NotificationType.RESERVA_ACTUALIZADA)
                 .title("Reserva Actualizada")
@@ -207,8 +223,8 @@ public class WebSocketNotificationService {
                 .build();
 
         sendNotificationToUser(clientId, notification);
-        if (ownerId != null) {
-            sendNotificationToUser(ownerId, notification);
+        if (employeeId != null) {
+            sendNotificationToUser(employeeId, notification);
         }
         sendNotificationToEmpresa(empresaId, notification);
     }
