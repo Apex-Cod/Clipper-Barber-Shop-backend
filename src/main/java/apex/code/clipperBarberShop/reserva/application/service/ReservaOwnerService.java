@@ -11,6 +11,7 @@ import apex.code.clipperBarberShop.reserva.domain.exception.ReservaInvalidStateE
 import apex.code.clipperBarberShop.reserva.domain.exception.ReservaNotFoundException;
 import apex.code.clipperBarberShop.reserva.domain.port.out.ReservaRepositoryPort;
 import apex.code.clipperBarberShop.servicio.domain.port.out.ServicioRepositoryPort;
+import apex.code.clipperBarberShop.shared.email.EmailService;
 import apex.code.clipperBarberShop.shared.websocket.service.WebSocketNotificationService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +41,7 @@ public class ReservaOwnerService {
     private final UsuarioRepositoryPort usuarioRepository;
     private final ReservaValidationService validationService;
     private final WebSocketNotificationService notificationService;
+    private final EmailService emailService;
     
     /**
      * Crea una nueva reserva (el owner puede crear reservas para cualquier cliente)
@@ -258,9 +261,29 @@ public class ReservaOwnerService {
         }
         
         reserva.setStatus("COMPLETED");
+        reserva.setRecordatorioEnviado(false); // ⭐ Reiniciar flag (ya no se necesita)
         Reserva updated = reservaRepository.save(reserva);
         
-        // 🔔 Enviar notificación WebSocket de reserva completada
+        // � Enviar email de reserva completada
+        try {
+            Usuario clienteObj = usuarioRepository.findById(reserva.getClientId()).orElse(null);
+            Usuario empleado = usuarioRepository.findById(updated.getEmployeeId()).orElse(null);
+            
+            if (clienteObj != null && clienteObj.getEmail() != null && empleado != null) {
+                emailService.sendReservaCompletadaEmail(
+                        updated,
+                        clienteObj.getName() + " " + clienteObj.getLastName(),
+                        clienteObj.getEmail(),
+                        empleado.getName() + " " + empleado.getLastName(),
+                        updated.getService().getName(),
+                        updated.getEmpresa().getNombre()
+                );
+            }
+        } catch (Exception e) {
+            log.error("Error enviando email de reserva completada: {}", e.getMessage(), e);
+        }
+        
+        // �🔔 Enviar notificación WebSocket de reserva completada
         try {
             Usuario clienteObj = usuarioRepository.findById(reserva.getClientId()).orElse(null);
             Usuario empleado = usuarioRepository.findById(updated.getEmployeeId()).orElse(null);
@@ -306,9 +329,28 @@ public class ReservaOwnerService {
         }
         
         reserva.setStatus("CANCELLED");
+        reserva.setRecordatorioEnviado(false); // ⭐ Reiniciar flag (ya no se necesita)
         Reserva saved = reservaRepository.save(reserva);
         
-        // 🔔 Enviar notificación WebSocket de reserva cancelada
+        // � Enviar email de reserva cancelada
+        try {
+            Usuario clienteObj = usuarioRepository.findById(reserva.getClientId()).orElse(null);
+            
+            if (clienteObj != null && clienteObj.getEmail() != null) {
+                emailService.sendReservaCanceladaEmail(
+                        saved,
+                        clienteObj.getName() + " " + clienteObj.getLastName(),
+                        clienteObj.getEmail(),
+                        saved.getService().getName(),
+                        saved.getEmpresa().getNombre(),
+                        request.getMotivo()
+                );
+            }
+        } catch (Exception e) {
+            log.error("Error enviando email de reserva cancelada: {}", e.getMessage(), e);
+        }
+        
+        // �🔔 Enviar notificación WebSocket de reserva cancelada
         try {
             Usuario clienteObj = usuarioRepository.findById(reserva.getClientId()).orElse(null);
             Usuario empleado = usuarioRepository.findById(saved.getEmployeeId()).orElse(null);
@@ -363,11 +405,36 @@ public class ReservaOwnerService {
                 request.getNuevaFecha());
         
         // Actualizar
+        LocalDateTime fechaAnterior = reserva.getReservationDate(); // Guardar fecha anterior
         reserva.setReservationDate(request.getNuevaFecha());
         reserva.setEmployeeId(request.getEmployeeId());
         reserva.setStatus("RESCHEDULED");
+        reserva.setRecordatorioEnviado(false); // ⭐ Reiniciar flag para nueva fecha
         
         Reserva updated = reservaRepository.save(reserva);
+        
+        // 📧 Enviar email de reserva reprogramada
+        try {
+            Usuario clienteObj = usuarioRepository.findById(reserva.getClientId()).orElse(null);
+            Usuario empleado = usuarioRepository.findById(updated.getEmployeeId()).orElse(null);
+            
+            if (clienteObj != null && clienteObj.getEmail() != null && empleado != null) {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+                String fechaAnteriorStr = fechaAnterior.format(formatter);
+                
+                emailService.sendReservaReprogramadaEmail(
+                        updated,
+                        clienteObj.getName() + " " + clienteObj.getLastName(),
+                        clienteObj.getEmail(),
+                        empleado.getName() + " " + empleado.getLastName(),
+                        updated.getService().getName(),
+                        updated.getEmpresa().getNombre(),
+                        fechaAnteriorStr
+                );
+            }
+        } catch (Exception e) {
+            log.error("Error enviando email de reserva reprogramada: {}", e.getMessage(), e);
+        }
         
         // 🔔 Enviar notificación WebSocket de reserva reprogramada
         try {
@@ -411,7 +478,7 @@ public class ReservaOwnerService {
     }
     
     /**
-     * Lista todas las reservas de la empresa
+     * Lista todas las reservas de la empresa ordenadas por prioridad de estado y fecha
      */
     public List<ReservaResponse> listarReservasPorEmpresa(String ownerId) {
         Usuario owner = usuarioRepository.findById(ownerId)
@@ -423,6 +490,7 @@ public class ReservaOwnerService {
         
         return reservaRepository.findByEmpresaIdAndDeletedFalse(owner.getEmpresa().getId())
                 .stream()
+                .sorted(this::compararReservasPorPrioridad)
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -443,7 +511,7 @@ public class ReservaOwnerService {
     }
     
     /**
-     * Lista reservas por estado
+     * Lista reservas por estado ordenadas por fecha
      */
     public List<ReservaResponse> listarReservasPorEstado(String status, String ownerId) {
         Usuario owner = usuarioRepository.findById(ownerId)
@@ -456,12 +524,13 @@ public class ReservaOwnerService {
         return reservaRepository.findByEmpresaIdAndStatusAndDeletedFalse(
                 owner.getEmpresa().getId(), status)
                 .stream()
+                .sorted((r1, r2) -> r1.getReservationDate().compareTo(r2.getReservationDate()))
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
     
     /**
-     * Lista reservas por empleado
+     * Lista reservas por empleado ordenadas por prioridad de estado y fecha
      */
     public List<ReservaResponse> listarReservasPorEmpleado(String employeeId, String ownerId) {
         Usuario owner = usuarioRepository.findById(ownerId)
@@ -476,6 +545,7 @@ public class ReservaOwnerService {
         
         return reservaRepository.findByEmployeeIdAndDeletedFalse(employeeId)
                 .stream()
+                .sorted(this::compararReservasPorPrioridad)
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -523,6 +593,57 @@ public class ReservaOwnerService {
         if (owner.getEmpresa() == null || 
             !owner.getEmpresa().getId().equals(reserva.getEmpresa().getId())) {
             throw new ReservaAccessDeniedException("No tiene permisos para acceder a esta reserva");
+        }
+    }
+    
+    /**
+     * Comparador personalizado para ordenar reservas por prioridad
+     * Orden: 
+     * 1. Estados activos (PENDING, CONFIRMED, RESCHEDULED) por fecha más próxima
+     * 2. COMPLETED por fecha más reciente
+     * 3. CANCELLED al final por fecha más reciente
+     */
+    private int compararReservasPorPrioridad(Reserva r1, Reserva r2) {
+        int prioridad1 = obtenerPrioridadEstado(r1.getStatus());
+        int prioridad2 = obtenerPrioridadEstado(r2.getStatus());
+        
+        // Primero comparar por prioridad de estado
+        if (prioridad1 != prioridad2) {
+            return Integer.compare(prioridad1, prioridad2);
+        }
+        
+        // Si tienen la misma prioridad, ordenar por fecha
+        // Para estados activos (prioridad 1): fecha más próxima primero
+        // Para completadas y canceladas: más recientes primero
+        if (prioridad1 == 1) {
+            return r1.getReservationDate().compareTo(r2.getReservationDate());
+        } else {
+            return r2.getReservationDate().compareTo(r1.getReservationDate());
+        }
+    }
+    
+    /**
+     * Obtiene la prioridad numérica del estado para ordenamiento
+     * 1 = Activas (PENDING, CONFIRMED, RESCHEDULED)
+     * 2 = Completadas (COMPLETED)
+     * 3 = Canceladas (CANCELLED)
+     */
+    private int obtenerPrioridadEstado(String status) {
+        if (status == null) {
+            return 3;
+        }
+        
+        switch (status) {
+            case "PENDING":
+            case "CONFIRMED":
+            case "RESCHEDULED":
+                return 1;
+            case "COMPLETED":
+                return 2;
+            case "CANCELLED":
+                return 3;
+            default:
+                return 3;
         }
     }
     
