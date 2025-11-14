@@ -328,7 +328,7 @@ public class ReservaOwnerService {
         }
         
         reserva.setStatus("CANCELLED");
-        reserva.setRecordatorioEnviado(false); // ⭐ Reiniciar flag (ya no se necesita)
+        reserva.setRecordatorioEnviado(false); // Reset flag for data consistency: cancelled reservations should not have reminders marked as sent
         Reserva saved = reservaRepository.save(reserva);
         
         // � Enviar email de reserva cancelada
