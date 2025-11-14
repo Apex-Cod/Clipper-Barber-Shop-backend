@@ -260,7 +260,6 @@ public class ReservaClientService {
         }
         
         // �🔔 Enviar notificación WebSocket de reserva cancelada
-
         
         // �🔔 Enviar notificación WebSocket de reserva cancelada
         try {
