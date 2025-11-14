@@ -51,11 +51,16 @@ public class Reserva extends SoftDeletableEntity {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+    
+    @Column(name = "recordatorio_enviado", nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private Boolean recordatorioEnviado = false; // Indica si ya se envió el recordatorio por email
 
     @PrePersist
     public void prePersist(){
         if(this.createdAt == null) this.createdAt = LocalDateTime.now();
         if(this.status == null) this.status = "PENDING";
         if(this.getDeleted() == null) this.setDeleted(false);
+        if(this.recordatorioEnviado == null) this.recordatorioEnviado = false;
     }
 }
