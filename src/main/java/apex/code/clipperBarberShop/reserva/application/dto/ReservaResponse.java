@@ -17,8 +17,10 @@ public class ReservaResponse {
     private String serviceName;
     private String clientId;
     private String clientName;
+    private String clientImageUrl;
     private String employeeId;
     private String employeeName;
+    private String employeeImageUrl;
     private LocalDateTime reservationDate;
     private Integer duracionMinutos;
     private Double finalPrice;
