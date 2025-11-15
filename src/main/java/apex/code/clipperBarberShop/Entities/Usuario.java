@@ -58,6 +58,9 @@ public class Usuario extends SoftDeletableEntity {
     @Column(name = "verification_attempts", columnDefinition = "integer default 0")
     @Builder.Default
     private Integer verificationAttempts = 0; // Número de intentos de verificación fallidos
+    
+    @Column(name = "profile_image_url", length = 500)
+    private String profileImageUrl; // URL de la imagen de perfil almacenada en Supabase (opcional)
 
     @PrePersist
     public void prePersist(){

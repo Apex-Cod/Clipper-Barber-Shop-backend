@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
 import java.util.List;
@@ -217,5 +218,66 @@ public class UserManagementController {
             Principal principal) {
         UsuarioResponse usuario = userManagementUseCase.restaurarUsuario(id, principal.getName());
         return ResponseEntity.ok(ApiResponse.success("Usuario restaurado", usuario));
+    }
+    
+    /**
+     * Subir o actualizar imagen de perfil de un usuario
+     * Cualquier usuario puede actualizar su propia imagen
+     * ADMIN: Puede actualizar la imagen de cualquier usuario
+     * OWNER: Puede actualizar la imagen de usuarios de su empresa
+     */
+    @PostMapping("/{id}/profile-image")
+    public ResponseEntity<ApiResponse<UsuarioResponse>> subirImagenPerfil(
+            @PathVariable String id,
+            @RequestParam("file") MultipartFile file,
+            Principal principal) {
+        
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("Debe proporcionar un archivo");
+        }
+        
+        UsuarioResponse usuario = userManagementUseCase.subirImagenPerfil(id, file, principal.getName());
+        return ResponseEntity.ok(ApiResponse.success("Imagen de perfil actualizada", usuario));
+    }
+    
+    /**
+     * Subir o actualizar imagen de perfil del usuario autenticado
+     */
+    @PostMapping("/me/profile-image")
+    public ResponseEntity<ApiResponse<UsuarioResponse>> subirMiImagenPerfil(
+            @RequestParam("file") MultipartFile file,
+            Principal principal) {
+        
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("Debe proporcionar un archivo");
+        }
+        
+        UsuarioResponse usuario = userManagementUseCase.subirImagenPerfil(
+                principal.getName(), file, principal.getName());
+        return ResponseEntity.ok(ApiResponse.success("Imagen de perfil actualizada", usuario));
+    }
+    
+    /**
+     * Eliminar imagen de perfil de un usuario
+     * Cualquier usuario puede eliminar su propia imagen
+     * ADMIN: Puede eliminar la imagen de cualquier usuario
+     * OWNER: Puede eliminar la imagen de usuarios de su empresa
+     */
+    @DeleteMapping("/{id}/profile-image")
+    public ResponseEntity<ApiResponse<UsuarioResponse>> eliminarImagenPerfil(
+            @PathVariable String id,
+            Principal principal) {
+        UsuarioResponse usuario = userManagementUseCase.eliminarImagenPerfil(id, principal.getName());
+        return ResponseEntity.ok(ApiResponse.success("Imagen de perfil eliminada", usuario));
+    }
+    
+    /**
+     * Eliminar imagen de perfil del usuario autenticado
+     */
+    @DeleteMapping("/me/profile-image")
+    public ResponseEntity<ApiResponse<UsuarioResponse>> eliminarMiImagenPerfil(Principal principal) {
+        UsuarioResponse usuario = userManagementUseCase.eliminarImagenPerfil(
+                principal.getName(), principal.getName());
+        return ResponseEntity.ok(ApiResponse.success("Imagen de perfil eliminada", usuario));
     }
 }

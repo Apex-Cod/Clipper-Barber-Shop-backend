@@ -42,4 +42,21 @@ public interface StoragePort {
      * @return URL pública de la imagen subida
      */
     String uploadServiceImage(String fileName, MultipartFile file);
+    
+    /**
+     * Sube una imagen de perfil de usuario al bucket de usuarios
+     * 
+     * @param userId ID del usuario
+     * @param file Archivo de imagen a subir
+     * @return URL pública de la imagen subida
+     */
+    String uploadUserProfileImage(String userId, MultipartFile file);
+    
+    /**
+     * Elimina la imagen de perfil de un usuario
+     * 
+     * @param userId ID del usuario
+     * @param imageUrl URL de la imagen a eliminar
+     */
+    void deleteUserProfileImage(String userId, String imageUrl);
 }

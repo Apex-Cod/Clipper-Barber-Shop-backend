@@ -25,4 +25,5 @@ public class UsuarioResponse {
     private Boolean deleted;
     private LocalDateTime deletedAt;
     private String deletedBy;
+    private String profileImageUrl;
 }
